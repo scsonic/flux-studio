@@ -1,5 +1,5 @@
 var gulp = require('gulp'),
-    sass = require('gulp-sass'),
+    sass = require('gulp-sass')(require('sass')),
     webserver = require('gulp-webserver'),
     exec = require('gulp-exec'),
     react = require('gulp-react'),

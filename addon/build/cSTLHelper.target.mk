@@ -7,9 +7,19 @@ DEFS_Debug := \
 	'-DUSING_UV_SHARED=1' \
 	'-DUSING_V8_SHARED=1' \
 	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-D_GLIBCXX_USE_CXX11_ABI=1' \
+	'-DELECTRON_ENSURE_CONFIG_GYPI' \
 	'-D_DARWIN_USE_64_BIT_INODE=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-DUSING_ELECTRON_CONFIG_GYPI' \
+	'-DV8_COMPRESS_POINTERS' \
+	'-DV8_COMPRESS_POINTERS_IN_ISOLATE_CAGE' \
+	'-DV8_31BIT_SMIS_ON_64BIT_ARCH' \
+	'-DV8_ENABLE_SANDBOX' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
+	'-DOPENSSL_NO_ASM' \
 	'-DBUILDING_NODE_EXTENSION' \
 	'-DDEBUG' \
 	'-D_DEBUG'
@@ -18,8 +28,9 @@ DEFS_Debug := \
 CFLAGS_Debug := \
 	-O0 \
 	-gdwarf-2 \
-	-mmacosx-version-min=10.7 \
-	-arch x86_64 \
+	-mmacosx-version-min=10.15 \
+	-arch \
+	arm64 \
 	-Wall \
 	-Wendif-labels \
 	-W \
@@ -31,10 +42,10 @@ CFLAGS_C_Debug := \
 
 # Flags passed to only C++ files.
 CFLAGS_CC_Debug := \
-	-std=gnu++0x \
+	-std=gnu++17 \
+	-stdlib=libc++ \
 	-fno-rtti \
 	-fno-exceptions \
-	-fno-threadsafe-statics \
 	-fno-strict-aliasing
 
 # Flags passed to only ObjC files.
@@ -44,27 +55,41 @@ CFLAGS_OBJC_Debug :=
 CFLAGS_OBJCC_Debug :=
 
 INCS_Debug := \
-	-I/Users/simon/.nw-gyp/0.17.4/include/node \
-	-I/Users/simon/.nw-gyp/0.17.4/src \
-	-I/Users/simon/.nw-gyp/0.17.4/deps/uv/include \
-	-I/Users/simon/.nw-gyp/0.17.4/deps/v8/include
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/include/node \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/src \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/openssl/config \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/openssl/openssl/include \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/uv/include \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/zlib \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/v8/include
 
 DEFS_Release := \
 	'-DNODE_GYP_MODULE_NAME=cSTLHelper' \
 	'-DUSING_UV_SHARED=1' \
 	'-DUSING_V8_SHARED=1' \
 	'-DV8_DEPRECATION_WARNINGS=1' \
+	'-D_GLIBCXX_USE_CXX11_ABI=1' \
+	'-DELECTRON_ENSURE_CONFIG_GYPI' \
 	'-D_DARWIN_USE_64_BIT_INODE=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
+	'-DUSING_ELECTRON_CONFIG_GYPI' \
+	'-DV8_COMPRESS_POINTERS' \
+	'-DV8_COMPRESS_POINTERS_IN_ISOLATE_CAGE' \
+	'-DV8_31BIT_SMIS_ON_64BIT_ARCH' \
+	'-DV8_ENABLE_SANDBOX' \
+	'-DOPENSSL_NO_PINSHARED' \
+	'-DOPENSSL_THREADS' \
+	'-DOPENSSL_NO_ASM' \
 	'-DBUILDING_NODE_EXTENSION'
 
 # Flags passed to all source files.
 CFLAGS_Release := \
-	-Os \
+	-O3 \
 	-gdwarf-2 \
-	-mmacosx-version-min=10.7 \
-	-arch x86_64 \
+	-mmacosx-version-min=10.15 \
+	-arch \
+	arm64 \
 	-Wall \
 	-Wendif-labels \
 	-W \
@@ -76,10 +101,10 @@ CFLAGS_C_Release := \
 
 # Flags passed to only C++ files.
 CFLAGS_CC_Release := \
-	-std=gnu++0x \
+	-std=gnu++17 \
+	-stdlib=libc++ \
 	-fno-rtti \
 	-fno-exceptions \
-	-fno-threadsafe-statics \
 	-fno-strict-aliasing
 
 # Flags passed to only ObjC files.
@@ -89,10 +114,13 @@ CFLAGS_OBJC_Release :=
 CFLAGS_OBJCC_Release :=
 
 INCS_Release := \
-	-I/Users/simon/.nw-gyp/0.17.4/include/node \
-	-I/Users/simon/.nw-gyp/0.17.4/src \
-	-I/Users/simon/.nw-gyp/0.17.4/deps/uv/include \
-	-I/Users/simon/.nw-gyp/0.17.4/deps/v8/include
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/include/node \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/src \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/openssl/config \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/openssl/openssl/include \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/uv/include \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/zlib \
+	-I/Users/scsonic/Library/Caches/node-gyp/31.0.0/deps/v8/include
 
 OBJS := \
 	$(obj).target/$(TARGET)/cSTLHelper.o
@@ -125,28 +153,28 @@ $(obj).$(TOOLSET)/$(TARGET)/%.o: $(obj)/%.cc FORCE_DO_CMD
 ### Rules for final target.
 LDFLAGS_Debug := \
 	-undefined dynamic_lookup \
-	-Wl,-no_pie \
 	-Wl,-search_paths_first \
-	-mmacosx-version-min=10.7 \
-	-arch x86_64 \
-	-L$(builddir)
+	-mmacosx-version-min=10.15 \
+	-arch \
+	arm64 \
+	-L$(builddir) \
+	-stdlib=libc++
 
 LIBTOOLFLAGS_Debug := \
 	-undefined dynamic_lookup \
-	-Wl,-no_pie \
 	-Wl,-search_paths_first
 
 LDFLAGS_Release := \
 	-undefined dynamic_lookup \
-	-Wl,-no_pie \
 	-Wl,-search_paths_first \
-	-mmacosx-version-min=10.7 \
-	-arch x86_64 \
-	-L$(builddir)
+	-mmacosx-version-min=10.15 \
+	-arch \
+	arm64 \
+	-L$(builddir) \
+	-stdlib=libc++
 
 LIBTOOLFLAGS_Release := \
 	-undefined dynamic_lookup \
-	-Wl,-no_pie \
 	-Wl,-search_paths_first
 
 LIBS :=

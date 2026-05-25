@@ -1,4 +1,6 @@
 const {app, ipcMain, BrowserWindow, dialog} = require('electron');
+const remoteMain = require('@electron/remote/main');
+remoteMain.initialize();
 app.commandLine.appendSwitch('ignore-gpu-blacklist');
 
 const BackendManager = require('./src/backend-manager.js');
@@ -8,7 +10,7 @@ const events = require('./src/ipc-events');
 
 const TTC2TTF = require('./src/ttc2ttf.js');
 
-const FontManager = require('font-manager');
+const FontManager = require('./src/font-manager-wrapper.js');
 const TextToSVG = require('text-to-svg');
 const path = require('path');
 const url = require('url');
@@ -132,7 +134,8 @@ function createWindow () {
         title: `FLUX Studio - ${app.getVersion()}`,
         webPreferences: {
             preload: path.join(__dirname, 'src', 'main-window-entry.js'),
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
         },
         vibrancy: 'light'});
 
@@ -143,6 +146,8 @@ function createWindow () {
         protocol: 'file:',
         slashes: true,
     }));
+
+    remoteMain.enable(mainWindow.webContents);
 
     mainWindow.on('closed', function () {
         mainWindow = null;
@@ -336,13 +341,32 @@ ipcMain.on(events.REQUEST_PATH_D_OF_TEXT , async (event, {text, x, y, fontFamily
     event.sender.send(events.RESOLVE_PATH_D_OF_TEXT + key, pathD);
 });
 
-console.log('Running FLUX Studio on ', os.arch());
+console.log('--------------------------------------------------');
+console.log('FLUX Studio Starting...');
+console.log('App Version: ', app.getVersion());
+console.log('Platform: ', process.platform);
+console.log('Architecture: ', process.arch);
+console.log('Node Version: ', process.version);
+console.log('Electron Version: ', process.versions.electron);
+console.log('--------------------------------------------------');
 
 if (os.arch() == 'ia32' || os.arch() == 'x32') {
     app.commandLine.appendSwitch('js-flags', '--max-old-space-size=2048');
 } else {
     app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
 }
+
+// Verify backend existence
+const backendPath = process.env.BACKEND;
+if (backendPath) {
+    if (fs.existsSync(backendPath)) {
+        console.log(`Backend binary found at: ${backendPath}`);
+    } else {
+        console.error(`CRITICAL: Backend binary NOT FOUND at: ${backendPath}`);
+        console.log('Please ensure the "backend" folder exists in the project root.');
+    }
+}
+
 
 app.on('ready', () => {
     menuManager = new MenuManager();

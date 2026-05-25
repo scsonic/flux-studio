@@ -29,10 +29,16 @@
             head = document.querySelector('head'),
             body = document.querySelector('body'),
             dev = localStorage['dev'] === 'true',
+            isStarted = false,
             getStarted = function(ghostPort) {
+                if (isStarted) return;
+                isStarted = true;
                 script.setAttribute('src', 'js/require.js');
                 script.dataset.main = 'js/main.js?v=' + (dev ? '' : window.FLUX.timestamp);
                 body.appendChild(script);
+                // Remove spinner
+                const spinner = document.querySelector('.spinner-roller');
+                if (spinner) spinner.style.display = 'none';
             },
             timer;
 
@@ -73,6 +79,31 @@
             ipc.send(events.CHECK_BACKEND_STATUS);
             ipc.send(events.NOTIFY_LANGUAGE, localStorage.getItem('active-lang'));
 
+            // Timeout to prevent infinite spinning
+            setTimeout(() => {
+                if (!isStarted) {
+                    console.warn('Backend startup timeout. Trying to start app anyway...');
+                    const spinner = document.querySelector('.spinner-roller');
+                    if (spinner) {
+                        spinner.innerHTML = `
+                            <div style="color:white; text-align:center; padding-top:100px; font-family: sans-serif;">
+                                <h2 style="color: #ff4444;">Backend Startup Timeout</h2>
+                                <p>Check if the "backend" folder exists and contains the "flux_api" binary.</p>
+                                <div style="margin-top: 20px;">
+                                    <button onclick="window.location.reload()" style="padding: 10px 20px; cursor: pointer; border-radius: 5px; border: none; background: #444; color: white;">Retry</button>
+                                    <button onclick="window.FLUX.bypassBackend()" style="padding: 10px 20px; cursor: pointer; border-radius: 5px; border: none; background: #007aff; color: white; margin-left: 10px;">Skip & Start UI (Debug)</button>
+                                </div>
+                                <p style="font-size: 12px; margin-top: 20px; color: #888;">Note: WiFi features will not work without the backend.</p>
+                            </div>`;
+                    }
+                }
+            }, 10000); // Reduced to 10 seconds for better feedback
+
+            window.FLUX.bypassBackend = function() {
+                console.warn('Bypassing backend check...');
+                getStarted(8000);
+            };
+
         } else {
             window.process = {}
             getStarted();
@@ -81,13 +112,13 @@
         cssLink.setAttribute('rel', 'stylesheet');
         cssLink.setAttribute('href', 'css/main.css?v=' + window.FLUX.timestamp);
         head.appendChild(cssLink);
-        head.appendChild(cssLink);
 
         if(localStorage.getItem('poke-ip-addr') == 'undefined') {
             localStorage.setItem('poke-ip-addr', '192.168.1.1')
         }
     }
     launch();
+
 </script>
 
 </html>

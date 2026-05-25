@@ -1,1 +1,1 @@
-cmd_Release/cSTLHelper.node := c++ -bundle -undefined dynamic_lookup -Wl,-no_pie -Wl,-search_paths_first -mmacosx-version-min=10.7 -arch x86_64 -L./Release  -o Release/cSTLHelper.node Release/obj.target/cSTLHelper/cSTLHelper.o 
+cmd_Release/cSTLHelper.node := c++ -bundle -undefined dynamic_lookup -Wl,-search_paths_first -mmacosx-version-min=10.15 -arch arm64 -L./Release -stdlib=libc++  -o Release/cSTLHelper.node Release/obj.target/cSTLHelper/cSTLHelper.o 

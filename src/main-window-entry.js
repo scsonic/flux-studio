@@ -2,8 +2,12 @@
 (function(G) {
     const path = require('path');
 
-    const {ipcRenderer, webFrame, remote} = require('electron');
+    const {ipcRenderer, webFrame} = require('electron');
+    const remote = require('@electron/remote');
     const events = require(path.join(__dirname, 'ipc-events'));
+
+    // Expose Node's require as requireNode before RequireJS overwrites window.require
+    G.requireNode = require;
 
     G.electron = {
         ipc: ipcRenderer,

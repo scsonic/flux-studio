@@ -1,69 +1,74 @@
-// hello.cc
-#include <node.h>
+#include <node_api.h>
+#include <string.h>
 
 namespace demo {
-
-using v8::FunctionCallbackInfo;
-using v8::Isolate;
-using v8::Local;
-using v8::Object;
-using v8::String;
-using v8::Value;
-using v8::Float32Array;
-using v8::ArrayBuffer;
 
 struct Tri {
   float normal[3];
   float vertices[9];
-  char bytecount[1];
+  char bytecount[2];
 } typedef Triangle;
 
-void Method(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "world"));
+napi_value Method(napi_env env, napi_callback_info info) {
+  napi_value world;
+  napi_create_string_utf8(env, "world", 5, &world);
+  return world;
 }
 
-void ParseStl(const FunctionCallbackInfo<Value>& args) {
-  Local<ArrayBuffer> ab = Local<ArrayBuffer>::Cast(args[0]);
-  int dataOffset = (int)(args[1]->NumberValue());
-  int faces = (int)(args[2]->NumberValue());
-  Local<Float32Array> vertices = Local<Float32Array>::Cast(args[3]);
-  Local<Float32Array> normals = Local<Float32Array>::Cast(args[4]);
+napi_value ParseStl(napi_env env, napi_callback_info info) {
+  size_t argc = 5;
+  napi_value args[5];
+  napi_get_cb_info(env, info, &argc, args, NULL, NULL);
 
-  char* dataPtr = ((char*)((ab->GetContents()).Data()) + dataOffset);
+  void* ab_data;
+  size_t ab_len;
+  napi_get_arraybuffer_info(env, args[0], &ab_data, &ab_len);
 
-  float* verticesPtr = (float*)((vertices->Buffer()->GetContents()).Data());
-  float* normalsPtr = (float*)((normals->Buffer()->GetContents()).Data());
+  int32_t dataOffset;
+  napi_get_value_int32(env, args[1], &dataOffset);
+
+  int32_t faces;
+  napi_get_value_int32(env, args[2], &faces);
+
+  void* vertices_data;
+  size_t vertices_len;
+  napi_get_typedarray_info(env, args[3], NULL, &vertices_len, &vertices_data, NULL, NULL);
+
+  void* normals_data;
+  size_t normals_len;
+  napi_get_typedarray_info(env, args[4], NULL, &normals_len, &normals_data, NULL, NULL);
+
+  char* dataPtr = (char*)ab_data + dataOffset;
+  float* verticesPtr = (float*)vertices_data;
+  float* normalsPtr = (float*)normals_data;
 
   int offset = 0;
-
-  for ( int face = 0; face < faces; face ++ ) {
+  for (int face = 0; face < faces; face++) {
+    // Each triangle in binary STL is 50 bytes
     Triangle* ptr = (Triangle*)(dataPtr + face * 50);
-    for ( int i = 0; i < 3; i ++ ) {
-        verticesPtr[ offset ] = ptr->vertices[ i * 3 ];
-        verticesPtr[ offset + 1 ] = ptr->vertices[ i * 3 + 1 ];
-        verticesPtr[ offset + 2 ] = ptr->vertices[ i * 3 + 2 ];
-        normalsPtr[ offset ] = ptr->normal[0];
-        normalsPtr[ offset + 1 ] = ptr->normal[1];
-        normalsPtr[ offset + 2 ] = ptr->normal[2];
-        offset += 3;
+    for (int i = 0; i < 3; i++) {
+      verticesPtr[offset] = ptr->vertices[i * 3];
+      verticesPtr[offset + 1] = ptr->vertices[i * 3 + 1];
+      verticesPtr[offset + 2] = ptr->vertices[i * 3 + 2];
+      normalsPtr[offset] = ptr->normal[0];
+      normalsPtr[offset + 1] = ptr->normal[1];
+      normalsPtr[offset + 2] = ptr->normal[2];
+      offset += 3;
     }
   }
-    //   Local<Float32Array> f32 = Float32Array::New(ab, 0, args[1]->NumberValue());
-        
-    //   float* dataPtr = (float*)((f32->Buffer()->GetContents()).Data());
 
-    //   for(size_t i = 0; i < f32->Length(); i++){
-    //       dataPtr[i] = dataPtr[i]*2;
-    //   }
-    //   args.GetReturnValue().Set(f32);
+  return NULL;
 }
 
-void init(Local<Object> exports) {
-  NODE_SET_METHOD(exports, "hello", Method);
-  NODE_SET_METHOD(exports, "parseStl", ParseStl);
+napi_value Init(napi_env env, napi_value exports) {
+  napi_value hello_fn, parse_stl_fn;
+  napi_create_function(env, "hello", NAPI_AUTO_LENGTH, Method, NULL, &hello_fn);
+  napi_create_function(env, "parseStl", NAPI_AUTO_LENGTH, ParseStl, NULL, &parse_stl_fn);
+  napi_set_named_property(env, exports, "hello", hello_fn);
+  napi_set_named_property(env, exports, "parseStl", parse_stl_fn);
+  return exports;
 }
 
-NODE_MODULE(addon, init)
+NAPI_MODULE(NODE_GYP_MODULE_NAME, Init)
 
 }  // namespace demo

@@ -148,11 +148,26 @@ class BackendManager extends EventEmitter {
     }
 
     _spawn() {
-        this._proc = spawn('"' + this._ghost_location + '"', this._args, {shell: true});
+        console.log(`[BackendManager] Spawning backend: ${this._ghost_location}`);
+        console.log(`[BackendManager] Arguments: ${this._args.join(' ')}`);
+
+        try {
+            this._proc = spawn('"' + this._ghost_location + '"', this._args, {shell: true});
+        } catch (err) {
+            console.error(`[BackendManager] Failed to spawn backend process: ${err}`);
+            return;
+        }
+
+        this._proc.on('error', (err) => {
+            console.error(`[BackendManager] Backend process error: ${err}`);
+        });
 
         this._proc.stdout.on('data', (data) => {
-            let result = uglyJsonParser(data.toString());
+            const dataStr = data.toString();
+            console.log(`[BackendManager] stdout: ${dataStr.trim()}`);
+            let result = uglyJsonParser(dataStr);
             if(result && result.type === 'ready') {
+                console.log(`[BackendManager] Backend reported READY on port ${result.port}`);
                 try {
                     this.emit('ready', result);
                 } finally {
@@ -163,16 +178,18 @@ class BackendManager extends EventEmitter {
         });
 
         this._proc.stderr.on('data', (data) => {
+            console.error(`[BackendManager] stderr: ${data.toString().trim()}`);
             this.emit('stderr', data);
         });
 
-        this._proc.on('exit', () => {
+        this._proc.on('exit', (code, signal) => {
+            console.log(`[BackendManager] Backend exited with code ${code} and signal ${signal}`);
             try {
                 this.emit('stopped');
             } finally {
                 this._proc = undefined;
                 if(this._running) {
-                    console.log('Backend terminated unexpectedly!');
+                    console.log('Backend terminated unexpectedly! Retrying in 2.5s...');
                     this._setRecover();
                 }
             }
