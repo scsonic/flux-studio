@@ -317,7 +317,14 @@ class MenuManager extends EventEmitter {
     }
     _on_menu_click(event) {
         if(event.id) {
-            this.emit(events.MENU_CLICK, event);
+            const serializedEvent = {
+                id: event.id,
+                serial: event.serial,
+                source: event.source,
+                uuid: event.uuid,
+                checked: event.checked
+            };
+            this.emit(events.MENU_CLICK, serializedEvent);
         }
     }
     setWindowOpened() {
