@@ -9,8 +9,8 @@ define([
             this._instance = undefined;
             this._actions = {
                 'IMPORT': () => {
-                    if (electron) {
-                        electron.trigger_file_input_click('file-upload-widget')
+                    if (window.electron) {
+                        window.electron.trigger_file_input_click('file-upload-widget')
                     }
                 },
                 'EXPORT_FLUX_TASK': () => this._instance._handleExportClick('-f'),

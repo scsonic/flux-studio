@@ -12,8 +12,8 @@ define([
             super();
             this._actions = {
                 'IMPORT': () => {
-                    if(electron) {
-                        electron.trigger_file_input_click('import_image');
+                    if(window.electron) {
+                        window.electron.trigger_file_input_click('import_image');
                     }
                 },
                 'SAVE_SCENE': () => FnWrapper.saveFile(),

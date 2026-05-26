@@ -12,8 +12,8 @@ define([
             convertTextToPathAmoungSvgcontent: ()=>{}
         };
     }
-    const ipc = electron.ipc;
-    const events = electron.events;
+    const ipc = window.electron.ipc;
+    const events = window.electron.events;
     const activeLang = i18n.getActiveLang();
 
     // a simple memoize function that takes in a function

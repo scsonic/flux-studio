@@ -8,8 +8,8 @@ define([
             super();
             this._actions = {
                 'IMPORT': () => {
-                    if (electron) {
-                        electron.trigger_file_input_click('stl_import');
+                    if (window.electron) {
+                        window.electron.trigger_file_input_click('stl_import');
                     }
                 },
                 'SAVE_SCENE': () => this._instance.reactSrc._handleDownloadScene(),

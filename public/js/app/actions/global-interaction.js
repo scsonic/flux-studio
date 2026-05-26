@@ -7,8 +7,8 @@ define([
     var ipc, events, defaultAction, currentHandler;
 
     if(window["electron"]) {
-        ipc = electron.ipc;
-        events = electron.events;
+        ipc = window.electron.ipc;
+        events = window.electron.events;
 
         defaultAction = {
             PREFERENCE: () => {

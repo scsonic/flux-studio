@@ -90,8 +90,8 @@ define([
             shortcuts.on([FN_KEY, 'minus'], function() { console.log("Zoom Out"); window.svgEditor.zoomOut(); });
 
             shortcuts.on(['ctrl', 'alt', 'd'], function(e) {
-                if(electron) {
-                    electron.ipc.send("DEBUG-INSPECT");
+                if(window.electron) {
+                    window.electron.ipc.send("DEBUG-INSPECT");
                 }
             });
 

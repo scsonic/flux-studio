@@ -48,7 +48,7 @@ define([
 
             var output = [];
 
-            if(electron) {
+            if(window.electron) {
                 let os = require("os");
                 output.push('======::os::======\n')
                 output.push(`OS: ${os.type()}\nARCH: ${os.arch()}\nRELEASE: ${os.release()}\n`);
