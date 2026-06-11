@@ -2,6 +2,9 @@
 
 > [!NOTE]
 > **This is a specialized version modified and built specifically for macOS Apple Silicon (arm64 / M1/M2/M3 MacBooks) architectures.**
+> 
+> * **Fix:** Fixed Slic3r slicing integration.
+> * **TODO:** USB connection/driver is not yet fixed; please connect to the machine via Wi-Fi.
 
 ---
 
