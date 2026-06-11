@@ -1,6 +1,8 @@
+'use strict';
+
 define(function () {
-    const padArrayWithZero = (arr, length) => {
-        while(arr.length < length) {
+    var padArrayWithZero = function padArrayWithZero(arr, length) {
+        while (arr.length < length) {
             arr.push('0');
         }
         return arr;
@@ -14,16 +16,16 @@ define(function () {
             return false;
         }
 
-        let currVerArr = currVer.split('.');
-        let promoteVerArr = promoteVer.split('.');
+        var currVerArr = currVer.split('.');
+        var promoteVerArr = promoteVer.split('.');
 
-        let len = Math.max(currVerArr.length, promoteVerArr.length);
+        var len = Math.max(currVerArr.length, promoteVerArr.length);
 
         currVerArr = padArrayWithZero(currVerArr, len);
         promoteVerArr = padArrayWithZero(promoteVerArr, len);
 
-        for (let i = 0; i < len; i++) {
-            let proVal = promoteVerArr[i],
+        for (var i = 0; i < len; i++) {
+            var proVal = promoteVerArr[i],
                 curVal = currVerArr[i];
             if (proVal < curVal) {
                 return false;

@@ -1,52 +1,48 @@
-define([
-    'helpers/websocket'
-], function(
-    Websocket
-) {
-    let CHANNELS = {},
-        TEST,
+'use strict';
+
+define(['helpers/websocket'], function (Websocket) {
+    var CHANNELS = {},
+        TEST = void 0,
         interval = 3000,
-        WS;
+        WS = void 0;
 
     // callback should receive opened usb channel, -1 if not available
-    return function(callback) {
+    return function (callback) {
 
-        let channelToOpen,
+        var channelToOpen = void 0,
             notifyChange = false;
 
-        const manageChannel = (availableChannels) => {
-            let _channels = {};
-            const channelHasChanged = Object.keys(CHANNELS).length !== Object.keys(_channels).length;
-            const knownChannel = (c) => {
-              return Object.keys(CHANNELS).indexOf(c) >= 0;
+        var manageChannel = function manageChannel(availableChannels) {
+            var _channels = {};
+            var channelHasChanged = Object.keys(CHANNELS).length !== Object.keys(_channels).length;
+            var knownChannel = function knownChannel(c) {
+                return Object.keys(CHANNELS).indexOf(c) >= 0;
             };
 
-
-            Object.keys(availableChannels).forEach(c => {
-                if(knownChannel(c)) {
+            Object.keys(availableChannels).forEach(function (c) {
+                if (knownChannel(c)) {
                     _channels[c] = CHANNELS[c];
-
                 } else {
                     _channels[c] = availableChannels[c];
                     _channels[c].connected = true;
                 }
                 if (!availableChannels[c]) {
                     _channels[c] = {
-                      connected: false
+                        connected: false
                     };
                 }
             });
 
-            if(channelHasChanged) {
+            if (channelHasChanged) {
                 notifyChange = true;
             }
             CHANNELS = _channels;
         };
 
-        const nextUnopenedChannel = () => {
-            let _channel = '';
-            Object.keys(CHANNELS).forEach(c => {
-                if(!CHANNELS[c].connected && !CHANNELS[c].hasError) {
+        var nextUnopenedChannel = function nextUnopenedChannel() {
+            var _channel = '';
+            Object.keys(CHANNELS).forEach(function (c) {
+                if (!CHANNELS[c].connected && !CHANNELS[c].hasError) {
                     _channel = c;
                 }
             });
@@ -54,37 +50,39 @@ define([
             return _channel;
         };
 
-        const processResult = (response) => {
-            const _handleList = () => {
-                let _interval = interval;
-                const DetectedUSBCable = Object.keys(response.h2h).length > 0;
+        var processResult = function processResult(response) {
+            var _handleList = function _handleList() {
+                var _interval = interval;
+                var DetectedUSBCable = Object.keys(response.h2h).length > 0;
 
                 // record new channels, remove unavailable channels
                 manageChannel(response.h2h);
 
-                if( DetectedUSBCable ) {
+                if (DetectedUSBCable) {
                     channelToOpen = nextUnopenedChannel();
-                    if(channelToOpen !== '') {
-                      _interval = 2 * interval;
-                      setTimeout(() => {
-                        WS.send(`open ${channelToOpen}`);
-                      }, interval);
+                    if (channelToOpen !== '') {
+                        _interval = 2 * interval;
+                        setTimeout(function () {
+                            WS.send('open ' + channelToOpen);
+                        }, interval);
                     }
                 }
-                setTimeout( () => { WS.send('list'); }, _interval);
+                setTimeout(function () {
+                    WS.send('list');
+                }, _interval);
             };
 
-            const _handleOpen = () => {
-                if(response.status === 'error') {
+            var _handleOpen = function _handleOpen() {
+                if (response.status === 'error') {
                     // if port has been opened
-                    let error = response.error.join('');
+                    var error = response.error.join('');
                     console.log('error', error);
 
-                    if(error === 'RESOURCE_BUSY') { // weird logic. need to fix
+                    if (error === 'RESOURCE_BUSY') {
+                        // weird logic. need to fix
                         console.log('usb connected and opened!');
                         notifyChange = true;
                         CHANNELS[channelToOpen].connected = false;
-
                     } else if (error === 'TIMEOUT') {
                         console.log('usb connect timeout!');
                         notifyChange = true;
@@ -92,36 +90,35 @@ define([
                     }
                 }
 
-                if(response.devopen) {
+                if (response.devopen) {
                     CHANNELS[response.devopen].connected = true;
                     CHANNELS[response.devopen].profile = response.profile;
                     CHANNELS[response.devopen].profile.source = 'h2h';
                     CHANNELS[response.devopen].profile.addr = response.devopen;
                     notifyChange = true;
                 }
-
             };
 
-            if(response.cmd === 'list') {
-              _handleList();
-
-            } else if(response.cmd === 'open') {
-              _handleOpen();
+            if (response.cmd === 'list') {
+                _handleList();
+            } else if (response.cmd === 'open') {
+                _handleOpen();
             }
 
-
-            if(notifyChange) {
-               notifyChange = false;
-               callback(CHANNELS);
+            if (notifyChange) {
+                notifyChange = false;
+                callback(CHANNELS);
             }
         };
 
-        if(!WS) {
+        if (!WS) {
             WS = new Websocket({
                 method: 'usb/interfaces',
                 onMessage: processResult,
-                onError: () => {},
-                onFatal: () => {console.log('usb checker onFatal')}
+                onError: function onError() {},
+                onFatal: function onFatal() {
+                    console.log('usb checker onFatal');
+                }
             });
         }
 

@@ -1,7 +1,9 @@
-define(['threejs'], function() {
+'use strict';
+
+define(['threejs'], function () {
     'use strict';
 
-    return function(model) {
+    return function (model) {
         var rotation = model.rotation,
             box = new THREE.Box3().setFromObject(model),
             center = box.center(),

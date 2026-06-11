@@ -1,4 +1,6 @@
-define(['jquery', 'threejs'], function($) {
+'use strict';
+
+define(['jquery', 'threejs'], function ($) {
     'use strict';
 
     return function (obj, camera, container) {
@@ -11,15 +13,14 @@ define(['jquery', 'threejs'], function($) {
             vector.setFromMatrixPosition(obj.matrixWorld);
             vector.project(camera);
 
-            vector.x = (vector.x * widthHalf) + widthHalf;
+            vector.x = vector.x * widthHalf + widthHalf;
             vector.y = -(vector.y * heightHalf) + heightHalf;
 
             return {
                 x: vector.x,
                 y: vector.y
             };
-        }
-        else {
+        } else {
             return {
                 x: undefined,
                 y: undefined

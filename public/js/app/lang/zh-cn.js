@@ -1,5 +1,6 @@
-define(function() {
+'use strict';
 
+define(function () {
 
     return {
         general: {
@@ -169,7 +170,7 @@ define(function() {
             connect: '连接',
             back: '返回',
             retry: '重试',
-            no_machine : '目前没有机器或已设置过连接，跳过此步骤',
+            no_machine: '目前没有机器或已设置过连接，跳过此步骤',
 
             // specific caption/content
             invalid_device_name: '机器名称只能使用中文，英文、数字、空格以及特殊字符 ( ) - _ ’ \'',
@@ -437,7 +438,7 @@ define(function() {
                 unbind_device: '确认要不再绑定此机器?',
                 CLOUD_UNKNOWN_ERROR: '机器无法连接到云端服务器. 请重新启动机器. (General)',
                 CLOUD_SESSION_CONNECTION_ERROR: '机器无法连接到云端服务器. 请重新启动机器. (Session)',
-                SERVER_INTERNAL_ERROR: '服务器发生错误，请稍后再试.',
+                SERVER_INTERNAL_ERROR: '服务器发生错误，请稍后再试.'
             }
         },
         print: {
@@ -471,11 +472,11 @@ define(function() {
                 solidLayerBottom: '底部实心层数',
                 density: '填充密度',
                 pattern: '填充图样',
-                auto: 'auto',                       // do not change
-                line: '线状',                       // do not change
-                rectilinear: '直线',         // do not change
-                rectilinearGrid: '直线格状',// do not change
-                honeycomb: '蜂嵌套',             // do not change
+                auto: 'auto', // do not change
+                line: '线状', // do not change
+                rectilinear: '直线', // do not change
+                rectilinearGrid: '直线格状', // do not change
+                honeycomb: '蜂嵌套', // do not change
                 offset: '位移',
                 xyOffset: '水平扩张',
                 zOffset: 'Z 轴位移',
@@ -532,68 +533,55 @@ define(function() {
                 firstLayerTemperature: '首层温度',
                 flexibleMaterial: '软性材料'
             },
-            mode: [
-                {
-                    value: 'beginner',
-                    label: '入门',
-                    checked: true
-                },
-                {
-                    value: 'expert',
-                    label: '专家'
-                }
-            ],
+            mode: [{
+                value: 'beginner',
+                label: '入门',
+                checked: true
+            }, {
+                value: 'expert',
+                label: '专家'
+            }],
             params: {
                 beginner: {
                     print_speed: {
                         text: '打印速度',
-                        options: [
-                            {
-                                value: 'slow',
-                                label: '中'
-                            },
-                            {
-                                value: 'fast',
-                                label: '快',
-                                selected: true
-                            }
-                        ]
+                        options: [{
+                            value: 'slow',
+                            label: '中'
+                        }, {
+                            value: 'fast',
+                            label: '快',
+                            selected: true
+                        }]
                     },
                     material: {
                         text: '材质',
-                        options: [
-                            {
-                                value: 'pla',
-                                label: 'PLA',
-                                selected: true
-                            }
-                        ]
+                        options: [{
+                            value: 'pla',
+                            label: 'PLA',
+                            selected: true
+                        }]
                     },
                     support: {
                         text: '支撑',
                         on: '支撑',
                         off: '关闭',
-                        options: [
-                            {
-                                value: 'everywhere',
-                                label: 'Everywhere',
-                                checked: true
-                            },
-                            {
-                                value: 'nowhere',
-                                label: 'nowhere'
-                            }
-                        ]
+                        options: [{
+                            value: 'everywhere',
+                            label: 'Everywhere',
+                            checked: true
+                        }, {
+                            value: 'nowhere',
+                            label: 'nowhere'
+                        }]
                     },
                     platform: {
                         text: '平台',
-                        options: [
-                            {
-                                value: 'raft',
-                                label: '垫片',
-                                selected: true
-                            }
-                        ]
+                        options: [{
+                            value: 'raft',
+                            label: '垫片',
+                            selected: true
+                        }]
                     }
                 },
                 expert: {
@@ -614,27 +602,22 @@ define(function() {
                     },
                     support: {
                         text: 'Support',
-                        options: [
-                            {
-                                value: 'everywhere',
-                                label: 'Everywhere',
-                                checked: true
-                            },
-                            {
-                                value: 'nowhere',
-                                label: 'nowhere'
-                            }
-                        ]
+                        options: [{
+                            value: 'everywhere',
+                            label: 'Everywhere',
+                            checked: true
+                        }, {
+                            value: 'nowhere',
+                            label: 'nowhere'
+                        }]
                     },
                     platform: {
                         text: 'Platform',
-                        options: [
-                            {
-                                value: 'raft',
-                                label: 'Raft',
-                                checked: true
-                            }
-                        ]
+                        options: [{
+                            value: 'raft',
+                            label: 'Raft',
+                            checked: true
+                        }]
                     }
                 }
             },
@@ -802,53 +785,46 @@ define(function() {
                     object_options: {
                         text: '材质',
                         label: '材质选项',
-                        options: [
-                            {
-                                value: 'cardboard',
-                                label: '牛皮纸',
-                                data: {
-                                    laser_speed: 10,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'wood',
-                                label: '木板',
-                                data: {
-                                    laser_speed: 3,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'steel',
-                                label: '皮革',
-                                data: {
-                                    laser_speed: 5,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'paper',
-                                label: '纸',
-                                data: {
-                                    laser_speed: 2,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'cork',
-                                label: '软木',
-                                data: {
-                                    laser_speed: 5,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'other',
-                                label: '其它',
-                                data: {}
+                        options: [{
+                            value: 'cardboard',
+                            label: '牛皮纸',
+                            data: {
+                                laser_speed: 10,
+                                power: 255
                             }
-                        ]
+                        }, {
+                            value: 'wood',
+                            label: '木板',
+                            data: {
+                                laser_speed: 3,
+                                power: 255
+                            }
+                        }, {
+                            value: 'steel',
+                            label: '皮革',
+                            data: {
+                                laser_speed: 5,
+                                power: 255
+                            }
+                        }, {
+                            value: 'paper',
+                            label: '纸',
+                            data: {
+                                laser_speed: 2,
+                                power: 255
+                            }
+                        }, {
+                            value: 'cork',
+                            label: '软木',
+                            data: {
+                                laser_speed: 5,
+                                power: 255
+                            }
+                        }, {
+                            value: 'other',
+                            label: '其它',
+                            data: {}
+                        }]
                     },
                     laser_speed: {
                         text: '激光速度',
@@ -914,42 +890,35 @@ define(function() {
                 text: '最佳',
                 time: '~30分钟',
                 value: 1200
-            },
-            {
+            }, {
                 id: 'high',
                 text: '精细',
                 time: '~20分钟',
                 value: 800
-            },
-            {
+            }, {
                 id: 'normal',
                 text: '中等',
                 time: '~10分钟',
                 value: 400
-            },
-            {
+            }, {
                 id: 'low',
                 text: '快速',
                 time: '~5分钟',
                 value: 200
-            },
-            {
+            }, {
                 id: 'draft',
                 text: '草稿',
                 time: '~2分钟',
                 value: 100
             }],
-            save_mode: [
-                {
-                    value: 'stl',
-                    label: 'STL',
-                    checked: true
-                },
-                {
-                    value: 'pcd',
-                    label: 'PCD'
-                },
-            ],
+            save_mode: [{
+                value: 'stl',
+                label: 'STL',
+                checked: true
+            }, {
+                value: 'pcd',
+                label: 'PCD'
+            }],
             manipulation: {
                 filter: '操作',
                 position: '位置',
@@ -1046,7 +1015,7 @@ define(function() {
                     times: '次',
                     cut: '切割',
                     engrave: '雕刻'
-                },
+                }
             },
             bottom_right_panel: {
                 convert_text_to_path_before_export: '部分字体在不同系统间有差异，输出前请将字体转换成路径，以确保文本正确显示。转换文本至路径中...'
@@ -1187,86 +1156,86 @@ define(function() {
             beambox_should_use_touch_panel_to_adjust: '请至手机切膜机触控面板调整设置。'
         },
         monitor: {
-            change_filament                     : 'CHANGE FILLAMENT',
-            browse_file                         : 'BROWSE FILE',
-            monitor                             : 'MONITOR',
-            currentTemperature                  : 'Current Temp',
-            nothingToPrint                      : 'There is nothing to print',
-            go                                  : '开始',
-            start                               : '开始',
-            pause                               : '暂停',
-            stop                                : '停止',
-            record                              : 'RECORD',
-            camera                              : '相机',
-            connecting                          : '连接中，请稍候',
-            HEAD_OFFLINE                        : '#110 没有侦测到工具头\n请确认工具头传输线完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
-            HEAD_ERROR_CALIBRATING              : '#112 工具头校正失误\n请重新装载工具头，并确认磁铁关节的附着',
-            HEAD_ERROR_FAN_FAILURE              : '#113 风扇无法转动\n请尝试用细针戳一下 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217732178">暸解更多</a>',
-            HEAD_ERROR_HEAD_OFFLINE             : '#110 没有侦测到工具头\n请确认工具头传输线完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
-            HEAD_ERROR_TYPE_ERROR               : '#111 侦测到错误工具头\n请安装正确的对应工具头',
-            HEAD_ERROR_INTLK_TRIG               : '#116 侦测到雕刻工具头倾斜\n请确认金属棒正确链接，雕刻头与握架紧密结合以继续<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217085937">了解更多</a>',
-            HEAD_ERROR_RESET                    : '#114 工具头传输线接触不良\n请确认工具头传输线完整插入以继续，如持续发生此问题，请联系 FLUX 客服 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183167">暸解更多</a>',
-            HEAD_ERROR_TILT                     : '#162 侦测到工具头倾斜\n请确认球型关节正确附着以继续',
-            HEAD_ERROR_SHAKE                    : '#162 侦测到工具头倾斜\n请确认球型关节正确附着以继续',
-            HEAD_ERROR_HARDWARE_FAILURE         : '#164 工具头温度异常\n请联系 FLUX 客服<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218415378">暸解更多</a>',
-            'HEAD_ERROR_?'                      : '#199 Toolhead error\nCheck if the toolhead is abnormal',
-            HARDWARE_ERROR_FILAMENT_RUNOUT      : '#121 没有侦测到线料\n请重新插入新的线料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">了解更多</a>',
-            HARDWARE_ERROR_0                    : '#121 没有侦测到线料\n请重新插入新的线料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">了解更多</a>',
-            HARDWARE_ERROR_PLATE_MISSING        : '#122 没有侦测到工作平台\n请放上工作平台金属板',
-            HARDWARE_ERROR_ZPROBE_ERROR         : '#123 水平校正失败\n请移除可能影响校正的物体（喷嘴残料、工作平台上杂质）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
-            HARDWARE_ERROR_CONVERGENCE_FAILED   : '#123 水平校正失败\n请移除可能影响校正的物体（喷嘴残料、工作平台上杂质）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
-            HARDWARE_ERROR_HOME_FAILED          : '#124 原点校正失败\n请排除轨道上异物，确定传输线不会被夹到 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>',
-            HARDWARE_ERROR_MAINBOARD_ERROR      : '#401 主板没有回应。请联系 FLUX 客服。',
-            HARDWARE_ERROR_SUBSYSTEM_ERROR      : '#402 子系统没有回应。请联系 FLUX 客服。',
-            HARDWARE_ERROR_SENSOR_ERROR         : '温度侦测器发生问题。请联系 FLUX 客服。',
-            HARDWARE_ERROR_SENSOR_ERROR_FSR     : '压力传感芯片读数错误',
-            HARDWARE_ERROR_PUMP_ERROR           : '#900 水冷未开，请联系客服 (02) 2651-3171',
-            HARDWARE_ERROR_DOOR_OPENED          : '#901 门盖开启，将门盖关上以继续',
-            HARDWARE_ERROR_OVER_TEMPERATURE     : '#902 水温过高，请稍后再继续',
-            WRONG_HEAD                          : '请更换成打印工具头',
-            USER_OPERATION                      : '别的用户正在占用机器',
-            RESOURCE_BUSY                       : '机器忙碌中\n如果机器没有在进行动作， 请重新启动机器',
-            DEVICE_ERROR                        : '机器错误\n请重新启动机器',
-            NO_RESPONSE                         : '机器错误\n请重新启动机器',
-            SUBSYSTEM_ERROR                     : '#402 子系统没有回应。请联系 FLUX 客服。',
-            HARDWARE_FAILURE                    : '机器错误\n请重新启动机器',
-            MAINBOARD_OFFLINE                   : '机器错误\n请重新启动机器',
-            G28_FAILED                          : '#124 原点校正失败\n请排除轨道上异物，并重新插拔工具头连接线 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>',
-            FILAMENT_RUNOUT_0                   : '#121 没有侦测到线料\n请重新插入新的线料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">了解更多</a>',
-            USER_OPERATION_FROM_CODE            : '使用操作暂停（更换线料）',
-            processing                          : '处理中',
-            savingPreview                       : '正在产生预览图',
-            hour                                : '小时',
-            minute                              : '分',
-            second                              : '秒',
-            left                                : '完成',
-            temperature                         : '温度',
-            forceStop                           : '是否强制停止现在工作?',
-            upload                              : '上传',
-            download                            : '下载',
-            fileNotDownloadable                 : '下载不支持此文件格式',
-            cannotPreview                       : '无法预览此文件',
-            extensionNotSupported               : '上传文件不支持此文件格式',
-            fileExistContinue                   : '文件已存在，是否要覆盖？',
-            confirmGToF                         : 'GCode 上传后会自动转档成 FCode，是否继续？',
-            updatePrintPresetSetting            : 'Mozu Studio 有新的默认打印参数。\n是否要更新？（会删除目前参数）',
-            confirmFileDelete                   : '是否确定要删除这个文件？',
+            change_filament: 'CHANGE FILLAMENT',
+            browse_file: 'BROWSE FILE',
+            monitor: 'MONITOR',
+            currentTemperature: 'Current Temp',
+            nothingToPrint: 'There is nothing to print',
+            go: '开始',
+            start: '开始',
+            pause: '暂停',
+            stop: '停止',
+            record: 'RECORD',
+            camera: '相机',
+            connecting: '连接中，请稍候',
+            HEAD_OFFLINE: '#110 没有侦测到工具头\n请确认工具头传输线完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
+            HEAD_ERROR_CALIBRATING: '#112 工具头校正失误\n请重新装载工具头，并确认磁铁关节的附着',
+            HEAD_ERROR_FAN_FAILURE: '#113 风扇无法转动\n请尝试用细针戳一下 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217732178">暸解更多</a>',
+            HEAD_ERROR_HEAD_OFFLINE: '#110 没有侦测到工具头\n请确认工具头传输线完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
+            HEAD_ERROR_TYPE_ERROR: '#111 侦测到错误工具头\n请安装正确的对应工具头',
+            HEAD_ERROR_INTLK_TRIG: '#116 侦测到雕刻工具头倾斜\n请确认金属棒正确链接，雕刻头与握架紧密结合以继续<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217085937">了解更多</a>',
+            HEAD_ERROR_RESET: '#114 工具头传输线接触不良\n请确认工具头传输线完整插入以继续，如持续发生此问题，请联系 FLUX 客服 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183167">暸解更多</a>',
+            HEAD_ERROR_TILT: '#162 侦测到工具头倾斜\n请确认球型关节正确附着以继续',
+            HEAD_ERROR_SHAKE: '#162 侦测到工具头倾斜\n请确认球型关节正确附着以继续',
+            HEAD_ERROR_HARDWARE_FAILURE: '#164 工具头温度异常\n请联系 FLUX 客服<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218415378">暸解更多</a>',
+            'HEAD_ERROR_?': '#199 Toolhead error\nCheck if the toolhead is abnormal',
+            HARDWARE_ERROR_FILAMENT_RUNOUT: '#121 没有侦测到线料\n请重新插入新的线料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">了解更多</a>',
+            HARDWARE_ERROR_0: '#121 没有侦测到线料\n请重新插入新的线料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">了解更多</a>',
+            HARDWARE_ERROR_PLATE_MISSING: '#122 没有侦测到工作平台\n请放上工作平台金属板',
+            HARDWARE_ERROR_ZPROBE_ERROR: '#123 水平校正失败\n请移除可能影响校正的物体（喷嘴残料、工作平台上杂质）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
+            HARDWARE_ERROR_CONVERGENCE_FAILED: '#123 水平校正失败\n请移除可能影响校正的物体（喷嘴残料、工作平台上杂质）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
+            HARDWARE_ERROR_HOME_FAILED: '#124 原点校正失败\n请排除轨道上异物，确定传输线不会被夹到 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>',
+            HARDWARE_ERROR_MAINBOARD_ERROR: '#401 主板没有回应。请联系 FLUX 客服。',
+            HARDWARE_ERROR_SUBSYSTEM_ERROR: '#402 子系统没有回应。请联系 FLUX 客服。',
+            HARDWARE_ERROR_SENSOR_ERROR: '温度侦测器发生问题。请联系 FLUX 客服。',
+            HARDWARE_ERROR_SENSOR_ERROR_FSR: '压力传感芯片读数错误',
+            HARDWARE_ERROR_PUMP_ERROR: '#900 水冷未开，请联系客服 (02) 2651-3171',
+            HARDWARE_ERROR_DOOR_OPENED: '#901 门盖开启，将门盖关上以继续',
+            HARDWARE_ERROR_OVER_TEMPERATURE: '#902 水温过高，请稍后再继续',
+            WRONG_HEAD: '请更换成打印工具头',
+            USER_OPERATION: '别的用户正在占用机器',
+            RESOURCE_BUSY: '机器忙碌中\n如果机器没有在进行动作， 请重新启动机器',
+            DEVICE_ERROR: '机器错误\n请重新启动机器',
+            NO_RESPONSE: '机器错误\n请重新启动机器',
+            SUBSYSTEM_ERROR: '#402 子系统没有回应。请联系 FLUX 客服。',
+            HARDWARE_FAILURE: '机器错误\n请重新启动机器',
+            MAINBOARD_OFFLINE: '机器错误\n请重新启动机器',
+            G28_FAILED: '#124 原点校正失败\n请排除轨道上异物，并重新插拔工具头连接线 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>',
+            FILAMENT_RUNOUT_0: '#121 没有侦测到线料\n请重新插入新的线料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">了解更多</a>',
+            USER_OPERATION_FROM_CODE: '使用操作暂停（更换线料）',
+            processing: '处理中',
+            savingPreview: '正在产生预览图',
+            hour: '小时',
+            minute: '分',
+            second: '秒',
+            left: '完成',
+            temperature: '温度',
+            forceStop: '是否强制停止现在工作?',
+            upload: '上传',
+            download: '下载',
+            fileNotDownloadable: '下载不支持此文件格式',
+            cannotPreview: '无法预览此文件',
+            extensionNotSupported: '上传文件不支持此文件格式',
+            fileExistContinue: '文件已存在，是否要覆盖？',
+            confirmGToF: 'GCode 上传后会自动转档成 FCode，是否继续？',
+            updatePrintPresetSetting: 'Mozu Studio 有新的默认打印参数。\n是否要更新？（会删除目前参数）',
+            confirmFileDelete: '是否确定要删除这个文件？',
             task: {
-                EXTRUDER                        : '打印',
-                PRINT                           : '打印',
-                LASER                           : '激光雕刻',
-                DRAW                            : '数位绘图',
-                CUT                             : '贴纸切割',
-                VINYL                           : '贴纸切割',
-                BEAMBOX                         : '激光雕刻',
-                'N/A'                           : '自由模式'
+                EXTRUDER: '打印',
+                PRINT: '打印',
+                LASER: '激光雕刻',
+                DRAW: '数位绘图',
+                CUT: '贴纸切割',
+                VINYL: '贴纸切割',
+                BEAMBOX: '激光雕刻',
+                'N/A': '自由模式'
             },
             device: {
-                EXTRUDER                        : '打印工具头',
-                LASER                           : '雕刻工具头',
-                DRAW                            : '绘制工具头'
+                EXTRUDER: '打印工具头',
+                LASER: '雕刻工具头',
+                DRAW: '绘制工具头'
             },
-            cant_get_toolhead_version           : '无法取得最新版本信息'
+            cant_get_toolhead_version: '无法取得最新版本信息'
         },
         alert: {
             caption: '错误',
@@ -1332,7 +1301,7 @@ define(function() {
             unknown_device: '无法与机器创建连接，请确认 USB 有连接于机器',
             important_update: {
                 caption: '重要更新',
-                message: 'Delta 有重要固件更新，是否要现在更新？',
+                message: 'Delta 有重要固件更新，是否要现在更新？'
             },
             unsupport_osx_version: '不支持此 Mac OS X 版本',
             need_password: '需要密码与机器创建连接',
@@ -1462,7 +1431,7 @@ define(function() {
             startPrintDeltaPlus: '确认将磁铁打印版放上平台',
             runningMovementTests: '进行运动测试',
             connectingMachine: '连接机器中',
-            movementTestFailed: { caption: '无法通过运动测试',  message: '1. 请确认工具头连接线不会造成过大阻力<br/>2. 上盖工具头连接线接头没入约一半<br/>3. 可尝试将工具头连接线顺时针或逆时针旋转 180 度再插入<br/>4. 参考 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/115003674128">此篇文章</a><br/>再试一次？' },
+            movementTestFailed: { caption: '无法通过运动测试', message: '1. 请确认工具头连接线不会造成过大阻力<br/>2. 上盖工具头连接线接头没入约一半<br/>3. 可尝试将工具头连接线顺时针或逆时针旋转 180 度再插入<br/>4. 参考 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/115003674128">此篇文章</a><br/>再试一次？' },
             befaultTutorialWelcome: '非常感谢您购买 FLUX Delta+！<br/><br/>以下内容能帮助您快速了解并使用您的 FLUX Delta+<br/>期待 FLUX Delta+ 能陪伴您度过美好的时光<br/><br/>＊请务必先观看教学影片！请打开中文本幕',
             openBrowser: '开启网页',
             welcome: '欢迎使用'
@@ -1490,16 +1459,16 @@ define(function() {
             extruderOnly: '请使用打印工具头来做校正'
         },
         head_info: {
-            ID                  : 'ID',
-            VERSION             : '工具头固件版本',
-            HEAD_MODULE         : '工具头种类',
-            EXTRUDER            : '打印模块',
-            LASER               : '雷刻模块',
-            USED                : '使用时间',
-            HARDWARE_VERSION    : '硬件版本',
-            FOCAL_LENGTH        : '焦距调整',
-            hours               : '小时',
-            cannot_get_info     : '无法读取工具头信息'
+            ID: 'ID',
+            VERSION: '工具头固件版本',
+            HEAD_MODULE: '工具头种类',
+            EXTRUDER: '打印模块',
+            LASER: '雷刻模块',
+            USED: '使用时间',
+            HARDWARE_VERSION: '硬件版本',
+            FOCAL_LENGTH: '焦距调整',
+            hours: '小时',
+            cannot_get_info: '无法读取工具头信息'
         }
     };
 });

@@ -1,33 +1,15 @@
-define([
-    'helpers/device-master',
-    'helpers/i18n',
-    'app/actions/beambox/beambox-preference',
-    'app/actions/progress-actions',
-    'app/constants/progress-constants',
-    'app/actions/beambox/font-funcs',
-    'helpers/api/svg-laser-parser',
-    'app/actions/alert-actions',
-    'app/actions/beambox',
-    'app/actions/global-actions',
-], function (
-    DeviceMaster,
-    i18n,
-    BeamboxPreference,
-    ProgressActions,
-    ProgressConstants,
-    FontFuncs,
-    svgLaserParser,
-    AlertActions,
-    BeamboxActions,
-    GlobalActions
-) {
-    const lang = i18n.lang;
-    const svgeditorParser = svgLaserParser({ type: 'svgeditor' });
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+define(['helpers/device-master', 'helpers/i18n', 'app/actions/beambox/beambox-preference', 'app/actions/progress-actions', 'app/constants/progress-constants', 'app/actions/beambox/font-funcs', 'helpers/api/svg-laser-parser', 'app/actions/alert-actions', 'app/actions/beambox', 'app/actions/global-actions'], function (DeviceMaster, i18n, BeamboxPreference, ProgressActions, ProgressConstants, FontFuncs, svgLaserParser, AlertActions, BeamboxActions, GlobalActions) {
+    var lang = i18n.lang;
+    var svgeditorParser = svgLaserParser({ type: 'svgeditor' });
 
     // capture the scene of the svgCanvas to bitmap
-    const fetchThumbnail = async () => {
+    var fetchThumbnail = async function fetchThumbnail() {
         function cloneAndModifySvg($svg) {
-            const $clonedSvg = $svg.clone(false);
+            var $clonedSvg = $svg.clone(false);
 
             $clonedSvg.find('text').remove();
             $clonedSvg.find('#selectorParentGroup').remove();
@@ -38,30 +20,32 @@ define([
             return $clonedSvg;
         }
 
-        async function DOM2Image($svg){
-            const $modifiedSvg = cloneAndModifySvg($svg);
-            const svgString = new XMLSerializer().serializeToString($modifiedSvg.get(0));
+        async function DOM2Image($svg) {
+            var $modifiedSvg = cloneAndModifySvg($svg);
+            var svgString = new XMLSerializer().serializeToString($modifiedSvg.get(0));
 
-            return await new Promise((resolve)=>{
-                const img  = new Image();
-                img.onload = () => resolve(img);
+            return await new Promise(function (resolve) {
+                var img = new Image();
+                img.onload = function () {
+                    return resolve(img);
+                };
 
                 img.src = 'data:image/svg+xml; charset=utf8, ' + encodeURIComponent(svgString);
             });
         }
 
         function cropAndDrawOnCanvas(img) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
 
             //cropping
-            const ratio = img.width / $('#svgroot').width();
-            const W = ratio * $('#svgroot').width();
-            const H = ratio * $('#svgroot').height();
-            const w = ratio * $('#canvasBackground').attr('width');
-            const h = ratio * $('#canvasBackground').attr('height');
-            const x = - (W - w) / 2;
-            const y = - (H - h) / 2;
+            var ratio = img.width / $('#svgroot').width();
+            var W = ratio * $('#svgroot').width();
+            var H = ratio * $('#svgroot').height();
+            var w = ratio * $('#canvasBackground').attr('width');
+            var h = ratio * $('#canvasBackground').attr('height');
+            var x = -(W - w) / 2;
+            var y = -(H - h) / 2;
 
             canvas.width = w;
             canvas.height = h;
@@ -70,11 +54,11 @@ define([
             return canvas;
         }
 
-        const $svg = cloneAndModifySvg($('#svgroot'));
-        const img = await DOM2Image($svg);
-        const canvas = cropAndDrawOnCanvas(img);
+        var $svg = cloneAndModifySvg($('#svgroot'));
+        var img = await DOM2Image($svg);
+        var canvas = cropAndDrawOnCanvas(img);
 
-        return await new Promise((resolve)=>{
+        return await new Promise(function (resolve) {
             canvas.toBlob(function (blob) {
                 resolve([canvas.toDataURL(), URL.createObjectURL(blob)]);
             });
@@ -82,15 +66,19 @@ define([
     };
 
     //return {uploadFile, thumbnailBlobURL}
-    const prepareFileWrappedFromSvgStringAndThumbnail = async () => {
-        const [thumbnail, thumbnailBlobURL] = await fetchThumbnail();
-        const svgString = svgCanvas.getSvgString();
-        const blob = new Blob([thumbnail, svgString], { type: 'application/octet-stream' });
-        const reader = new FileReader();
-        const uploadFile = await new Promise((resolve) => {
+    var prepareFileWrappedFromSvgStringAndThumbnail = async function prepareFileWrappedFromSvgStringAndThumbnail() {
+        var _ref = await fetchThumbnail(),
+            _ref2 = _slicedToArray(_ref, 2),
+            thumbnail = _ref2[0],
+            thumbnailBlobURL = _ref2[1];
+
+        var svgString = svgCanvas.getSvgString();
+        var blob = new Blob([thumbnail, svgString], { type: 'application/octet-stream' });
+        var reader = new FileReader();
+        var uploadFile = await new Promise(function (resolve) {
             reader.onload = function () {
                 //not sure whether all para is needed
-                const file = {
+                var file = {
                     data: reader.result,
                     name: 'svgeditor.svg',
                     uploadName: thumbnailBlobURL.split('/').pop(),
@@ -112,40 +100,41 @@ define([
         };
     };
 
-    const fetchFcode = async () => {
+    var fetchFcode = async function fetchFcode() {
         ProgressActions.open(ProgressConstants.WAITING, lang.beambox.bottom_right_panel.convert_text_to_path_before_export);
         await FontFuncs.convertTextToPathAmoungSvgcontent();
         ProgressActions.close();
-        const { uploadFile, thumbnailBlobURL } = await prepareFileWrappedFromSvgStringAndThumbnail();
+
+        var _ref3 = await prepareFileWrappedFromSvgStringAndThumbnail(),
+            uploadFile = _ref3.uploadFile,
+            thumbnailBlobURL = _ref3.thumbnailBlobURL;
+
         await svgeditorParser.uploadToSvgeditorAPI([uploadFile], {
             model: BeamboxPreference.read('model'),
             engraveDpi: BeamboxPreference.read('engrave_dpi'),
-            onProgressing: (data) => {
+            onProgressing: function onProgressing(data) {
                 ProgressActions.open(ProgressConstants.STEPPING, '', data.message, false);
                 ProgressActions.updating(data.message, data.percentage * 100);
             },
-            onFinished: () => {
+            onFinished: function onFinished() {
                 ProgressActions.updating(lang.message.uploading_fcode, 100);
             }
         });
-        const fcodeBlob = await new Promise((resolve) => {
-            const names = []; //don't know what this is for
-            svgeditorParser.getTaskCode(
-                names,
-                {
-                    onProgressing: (data) => {
-                        ProgressActions.open(ProgressConstants.STEPPING, '', data.message, false);
-                        ProgressActions.updating(data.message, data.percentage * 100);
-                    },
-                    onFinished: function (blob, fileName, fileTimeCost) {
-                        GlobalActions.sliceComplete({ time: fileTimeCost });
-                        ProgressActions.updating(lang.message.uploading_fcode, 100);
-                        resolve(blob);
-                    },
-                    fileMode: '-f',
-                    model: BeamboxPreference.read('model')
-                }
-            );
+        var fcodeBlob = await new Promise(function (resolve) {
+            var names = []; //don't know what this is for
+            svgeditorParser.getTaskCode(names, {
+                onProgressing: function onProgressing(data) {
+                    ProgressActions.open(ProgressConstants.STEPPING, '', data.message, false);
+                    ProgressActions.updating(data.message, data.percentage * 100);
+                },
+                onFinished: function onFinished(blob, fileName, fileTimeCost) {
+                    GlobalActions.sliceComplete({ time: fileTimeCost });
+                    ProgressActions.updating(lang.message.uploading_fcode, 100);
+                    resolve(blob);
+                },
+                fileMode: '-f',
+                model: BeamboxPreference.read('model')
+            });
         });
         return {
             fcodeBlob: fcodeBlob,
@@ -153,26 +142,28 @@ define([
         };
     };
 
-
     return {
-        uploadFcode: async function (device) {
-            const { fcodeBlob, thumbnailBlobURL } = await fetchFcode();
-            await DeviceMaster.select(device)
-                .done(() => {
-                    GlobalActions.showMonitor(device, fcodeBlob, thumbnailBlobURL, 'LASER');
-                })
-                .fail((errMsg) => {
-                    AlertActions.showPopupError('menu-item', errMsg);
-                });
+        uploadFcode: async function uploadFcode(device) {
+            var _ref4 = await fetchFcode(),
+                fcodeBlob = _ref4.fcodeBlob,
+                thumbnailBlobURL = _ref4.thumbnailBlobURL;
+
+            await DeviceMaster.select(device).done(function () {
+                GlobalActions.showMonitor(device, fcodeBlob, thumbnailBlobURL, 'LASER');
+            }).fail(function (errMsg) {
+                AlertActions.showPopupError('menu-item', errMsg);
+            });
 
             ProgressActions.close();
         },
 
-        exportFcode: async function () {
-            const { fcodeBlob } = await fetchFcode();
-            const defaultFCodeName = svgCanvas.getLatestImportFileName() || 'untitled';
-            const langFile = i18n.lang.topmenu.file;
-            const fileReader = new FileReader();
+        exportFcode: async function exportFcode() {
+            var _ref5 = await fetchFcode(),
+                fcodeBlob = _ref5.fcodeBlob;
+
+            var defaultFCodeName = svgCanvas.getLatestImportFileName() || 'untitled';
+            var langFile = i18n.lang.topmenu.file;
+            var fileReader = new FileReader();
 
             ProgressActions.close();
 
@@ -181,6 +172,6 @@ define([
             };
 
             fileReader.readAsArrayBuffer(fcodeBlob);
-        },
+        }
     };
 });

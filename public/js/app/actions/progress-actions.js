@@ -1,14 +1,10 @@
-define([
-    'app/constants/progress-constants',
-    'app/dispatcher/progress-dispatcher'
-], function(
-    ProgressConstants,
-    ProgressDispatcher
-) {
+'use strict';
+
+define(['app/constants/progress-constants', 'app/dispatcher/progress-dispatcher'], function (ProgressConstants, ProgressDispatcher) {
     'use strict';
 
     return {
-        open: function(type, caption, message, hasStop, onFinished, onOpened, onStop) {
+        open: function open(type, caption, message, hasStop, onFinished, onOpened, onStop) {
             ProgressDispatcher.dispatch({
                 actionType: ProgressConstants.OPEN_EVENT,
                 type: type,
@@ -21,7 +17,7 @@ define([
             });
         },
 
-        updating: function(message, percentage, onStop) {
+        updating: function updating(message, percentage, onStop) {
             ProgressDispatcher.dispatch({
                 actionType: ProgressConstants.UPDATE_EVENT,
                 message: message,
@@ -30,7 +26,7 @@ define([
             });
         },
 
-        close: function() {
+        close: function close() {
             ProgressDispatcher.dispatch({
                 actionType: ProgressConstants.FINISH_EVENT
             });

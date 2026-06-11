@@ -1,19 +1,19 @@
+'use strict';
+
 /**
  * full position (left, top, right, right)
  */
-define([
-    'jquery'
-], function($) {
+define(['jquery'], function ($) {
     'use strict';
 
-    $.fn.box = function(is_offset) {
-        is_offset = ('boolean' === typeof is_offset ? is_offset : false);
+    $.fn.box = function (is_offset) {
+        is_offset = 'boolean' === typeof is_offset ? is_offset : false;
 
         var $self = $(this),
             bounds = $self.get(0).getBoundingClientRect(),
             real_width = bounds.right - bounds.left,
             real_height = bounds.bottom - bounds.top,
-            pos = (true === is_offset ? $self.offset() : $self.position());
+            pos = true === is_offset ? $self.offset() : $self.position();
 
         return {
             left: pos.left,
@@ -24,7 +24,7 @@ define([
             height: real_height,
             center: {
                 x: (pos.left * 2 + real_width) / 2,
-                y: (pos.top * 2 + real_height) / 2,
+                y: (pos.top * 2 + real_height) / 2
             }
         };
     };

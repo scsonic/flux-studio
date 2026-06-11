@@ -1,13 +1,6 @@
-define([
-    'app/dispatcher/input-lightbox-dispatcher',
-    'app/constants/input-lightbox-constants',
-    'events',
-    'helpers/object-assign'
-], function(
-    Dispatcher,
-    Constants,
-    EventEmitter
-) {
+'use strict';
+
+define(['app/dispatcher/input-lightbox-dispatcher', 'app/constants/input-lightbox-constants', 'events', 'helpers/object-assign'], function (Dispatcher, Constants, EventEmitter) {
     'use strict';
 
     var namespace = 'InputLightBox',
@@ -15,29 +8,26 @@ define([
 
     Store = Object.assign(EventEmitter.prototype, {
 
-        onInputLightBoxOpened: function(callback) {
+        onInputLightBoxOpened: function onInputLightBoxOpened(callback) {
             this.on(namespace + Constants.OPEN_EVENT, callback);
             return Store;
         },
 
-        removeOpenedListener: function(callback) {
+        removeOpenedListener: function removeOpenedListener(callback) {
             this.removeListener(namespace + Constants.OPEN_EVENT, callback);
             return Store;
         },
 
-        dispatcherIndex: Dispatcher.register(function(payload) {
+        dispatcherIndex: Dispatcher.register(function (payload) {
             var actionType = payload.actionType,
-                actions = [
-                    namespace + Constants.OPEN_EVENT
-                ],
-                isMethodExisting = function(method) {
-                    return namespace + actionType === method;
-                };
+                actions = [namespace + Constants.OPEN_EVENT],
+                isMethodExisting = function isMethodExisting(method) {
+                return namespace + actionType === method;
+            };
 
             if (true === actions.some(isMethodExisting)) {
                 Store.emit(namespace + actionType, payload);
-            }
-            else {
+            } else {
                 throw new Error('No method exists');
             }
         })

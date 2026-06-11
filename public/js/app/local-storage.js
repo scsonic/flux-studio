@@ -1,1 +1,5 @@
-define(() => localStorage);
+"use strict";
+
+define(function () {
+  return localStorage;
+});

@@ -1,9 +1,13 @@
+'use strict';
+
 define(['helpers/i18n'], function (i18n) {
     'use strict';
 
-    const lang = i18n.lang;
+    var _this = this;
 
-    const self = {
+    var lang = i18n.lang;
+
+    var self = {
         /**
          * Error as constants
          */
@@ -19,27 +23,26 @@ define(['helpers/i18n'], function (i18n) {
         * Translate device error into readable language
         * @param {String|String[]} error - some string or array
         */
-        translate: (error) => {
+        translate: function translate(error) {
             // always process error as array, hard fix for the backend
-            error = (error instanceof Array ? error : [error]);
+            error = error instanceof Array ? error : [error];
 
-            let errorOutput = '';
+            var errorOutput = '';
 
             if (error.length) {
                 if (error[0] === 'CLOUD') {
                     console.log('device error handler', error);
                     errorOutput = lang.settings.flux_cloud[error.join('_')];
-                }
-                else if (error.length === 4) {
-                    if(error[3] === 'N/A') {
-                        errorOutput = this.translate(['HEAD_ERROR','HEAD_OFFLINE']);
+                } else if (error.length === 4) {
+                    if (error[3] === 'N/A') {
+                        errorOutput = _this.translate(['HEAD_ERROR', 'HEAD_OFFLINE']);
                     }
                     // for wrong toolhead type;
                     if (error[1] === 'TYPE_ERROR') {
                         errorOutput = lang.monitor[error.slice(0, 2).join('_')];
                     }
                     if (errorOutput === '') {
-                        errorOutput = (error.length >= 2) ? lang.monitor[error.slice(0, 2).join('_')] : error.join('_');
+                        errorOutput = error.length >= 2 ? lang.monitor[error.slice(0, 2).join('_')] : error.join('_');
                     }
                 } else if (error.length === 3) {
                     errorOutput = self.processToolheadErrorCode(error[2]);
@@ -48,7 +51,7 @@ define(['helpers/i18n'], function (i18n) {
                         errorOutput = lang.monitor[error.slice(0, 2).join('_')];
                     }
                     if (errorOutput === '') {
-                        errorOutput = (error.length >= 2) ? lang.monitor[error.slice(0, 2).join('_')] : error.join('_');
+                        errorOutput = error.length >= 2 ? lang.monitor[error.slice(0, 2).join('_')] : error.join('_');
                     }
                 } else {
                     if (lang.generic_error[error[0]]) {
@@ -64,12 +67,11 @@ define(['helpers/i18n'], function (i18n) {
                 // ["HARDWARE_ERROR",  "SENSOR_ERROR", "FSR", "X-"]
                 // ["HARDWARE_ERROR",  "SENSOR_ERROR", "FSR", "X-", "Y-"]
                 // ["HARDWARE_ERROR",  "SENSOR_ERROR", "FSR", "X-", "Y-", "Z-"]
-                if(error.slice(0,3).join('_') === 'HARDWARE_ERROR_SENSOR_ERROR_FSR') {
+                if (error.slice(0, 3).join('_') === 'HARDWARE_ERROR_SENSOR_ERROR_FSR') {
                     errorOutput = lang.monitor[error.slice(0, 3).join('_')];
-                    errorOutput = `${errorOutput} ${error.slice(3).join(' ')}`;
+                    errorOutput = errorOutput + ' ' + error.slice(3).join(' ');
                 }
             }
-
 
             return errorOutput || '';
         },
@@ -77,13 +79,15 @@ define(['helpers/i18n'], function (i18n) {
          *  Process error code ( mostly for toolhead error )
          *  @param {String} argument - The error code
          */
-        processToolheadErrorCode: (errorCode) => {
+        processToolheadErrorCode: function processToolheadErrorCode(errorCode) {
             if (Number(errorCode) === parseInt(errorCode)) {
-                let m = parseInt(errorCode).toString(2).split('').reverse();
-                let message = m.map((flag, index) => {
+                var m = parseInt(errorCode).toString(2).split('').reverse();
+                var message = m.map(function (flag, index) {
                     return flag === '1' ? lang.head_module.error[index] : '';
                 });
-                return message.filter(entry => entry !== '').join('\n');
+                return message.filter(function (entry) {
+                    return entry !== '';
+                }).join('\n');
             } else {
                 return '';
             }
@@ -92,32 +96,31 @@ define(['helpers/i18n'], function (i18n) {
          * Process change filament response
          * @param {Object} response - Error response from change filament command
          */
-        processChangeFilamentResponse: (response) => {
+        processChangeFilamentResponse: function processChangeFilamentResponse(response) {
             if ('RESOURCE_BUSY' === response.error[0]) {
                 return self.Errors.DEFAULT;
-            }
-            else if ('TIMEOUT' === response.error[0]) {
+            } else if ('TIMEOUT' === response.error[0]) {
                 return self.Errors.TIMEOUT;
-            }
-            else if (response.info === 'TYPE_ERROR') {
+            } else if (response.info === 'TYPE_ERROR') {
                 return self.Errors.TYPE_ERROR;
-            }
-            else if ('UNKNOWN_COMMAND' === response.error[0]) {
+            } else if ('UNKNOWN_COMMAND' === response.error[0]) {
                 return self.Errors.UNKNOWN_COMMAND;
-            }
-            else if ('KICKED' === response.error[0]) {
+            } else if ('KICKED' === response.error[0]) {
                 return self.Errors.KICKED;
-            }
-            else {
+            } else {
                 return self.Errors.DEFAULT;
             }
         },
         /**
          * Regularize error message
          */
-        processDeviceMasterResponse: (response) => {
-            if (response.info === 'RESOURCE_BUSY') { response.error = ['RESOURCE_BUSY']; }
-            if (response.module === 'LASER') { response.error = ['HEAD_ERROR', 'TYPE_ERROR']; }
+        processDeviceMasterResponse: function processDeviceMasterResponse(response) {
+            if (response.info === 'RESOURCE_BUSY') {
+                response.error = ['RESOURCE_BUSY'];
+            }
+            if (response.module === 'LASER') {
+                response.error = ['HEAD_ERROR', 'TYPE_ERROR'];
+            }
             // if (!response.module) { response.error = ['HEAD_ERROR', "HEAD_OFFLINE"]; }
             return response;
         }

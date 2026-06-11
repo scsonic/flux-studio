@@ -1,11 +1,13 @@
+'use strict';
+
 /**
  * blob segments
  */
-define(function() {
+define(function () {
     'use strict';
 
-    return function(blob, callback) {
-        callback = callback || function() {};
+    return function (blob, callback) {
+        callback = callback || function () {};
 
         var chunk,
             CHUNK_PKG_SIZE = 4096;
@@ -16,4 +18,4 @@ define(function() {
             callback(chunk);
         }
     };
-})
+});

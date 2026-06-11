@@ -1,106 +1,98 @@
-define([
-    'app/dispatcher/beambox-dispatcher',
-    'app/constants/beambox-constants',
-    'events',
-    'helpers/object-assign'
-], function(
-    Dispatcher,
-    Constants,
-    EventEmitter
-) {
+'use strict';
+
+define(['app/dispatcher/beambox-dispatcher', 'app/constants/beambox-constants', 'events', 'helpers/object-assign'], function (Dispatcher, Constants, EventEmitter) {
     'use strict';
 
     var beamboxStore;
 
     beamboxStore = Object.assign(EventEmitter.prototype, {
 
-        onUpdateLaserPanel: function(callback) {
+        onUpdateLaserPanel: function onUpdateLaserPanel(callback) {
             this.on(Constants.UPDATE_LASER_PANEL, callback);
             return beamboxStore;
         },
 
-        onEndDrawingPreviewBlob: function(callback) {
+        onEndDrawingPreviewBlob: function onEndDrawingPreviewBlob(callback) {
             this.on(Constants.END_DRAWING_PREVIEW_BLOB, callback);
             return beamboxStore;
         },
 
-        onStartDrawingPreviewBlob: function(callback) {
+        onStartDrawingPreviewBlob: function onStartDrawingPreviewBlob(callback) {
             this.on(Constants.START_DRAWING_PREVIEW_BLOB, callback);
             return beamboxStore;
         },
 
-        onCropperShown: function(callback) {
+        onCropperShown: function onCropperShown(callback) {
             this.on(Constants.SHOW_CROPPER, callback);
             return beamboxStore;
         },
 
-        onEndImageTrace: function(callback) {
+        onEndImageTrace: function onEndImageTrace(callback) {
             this.on(Constants.END_IMAGE_TRACE, callback);
             return beamboxStore;
         },
 
-        onClearCameraCanvas: function(callback) {
+        onClearCameraCanvas: function onClearCameraCanvas(callback) {
             this.on(Constants.CLEAR_CAMERA_CANVAS, callback);
             return beamboxStore;
         },
 
-        onCloseInsertObjectSubmenu: function(callback) {
+        onCloseInsertObjectSubmenu: function onCloseInsertObjectSubmenu(callback) {
             this.on(Constants.CLOSE_INSERT_OBJECT_SUBMENU, callback);
             return beamboxStore;
         },
 
-        onResetPreviewButton: function(callback) {
+        onResetPreviewButton: function onResetPreviewButton(callback) {
             this.on(Constants.RESET_PREVIEW_BUTTON, callback);
             return beamboxStore;
         },
 
-        removeUpdateLaserPanelListener: function(callback) {
+        removeUpdateLaserPanelListener: function removeUpdateLaserPanelListener(callback) {
             this.removeListener(Constants.UPDATE_LASER_PANEL, callback);
             return beamboxStore;
         },
 
-        removeEndDrawingPreviewBlobListener: function(callback) {
+        removeEndDrawingPreviewBlobListener: function removeEndDrawingPreviewBlobListener(callback) {
             this.removeListener(Constants.END_DRAWINGk_PREVIEW_BLOB, callback);
             return beamboxStore;
         },
 
-        removeStartDrawingPreviewBlobListener: function(callback) {
+        removeStartDrawingPreviewBlobListener: function removeStartDrawingPreviewBlobListener(callback) {
             this.removeListener(Constants.START_DRAWING_PREVIEW_BLOB, callback);
             return beamboxStore;
         },
 
-        removeCropperShownListener: function(callback) {
+        removeCropperShownListener: function removeCropperShownListener(callback) {
             this.removeListener(Constants.SHOW_CROPPER, callback);
             return beamboxStore;
         },
 
-        removeEndImageTraceListener: function(callback) {
+        removeEndImageTraceListener: function removeEndImageTraceListener(callback) {
             this.removeListener(Constants.END_IMAGE_TRACE, callback);
             return beamboxStore;
         },
 
-        removeClearCameraCanvasListener: function(callback) {
+        removeClearCameraCanvasListener: function removeClearCameraCanvasListener(callback) {
             this.removeListener(Constants.CLEAR_CAMERA_CANVAS, callback);
             return beamboxStore;
         },
 
-        removeCloseInsertObjectSubmenuListener: function(callback) {
+        removeCloseInsertObjectSubmenuListener: function removeCloseInsertObjectSubmenuListener(callback) {
             this.removeListener(Constants.CLOSE_INSERT_OBJECT_SUBMENU, callback);
             return beamboxStore;
         },
 
-        removeResetPreviewButton: function(callback) {
+        removeResetPreviewButton: function removeResetPreviewButton(callback) {
             this.removeListener(Constants.RESET_PREVIEW_BUTTON, callback);
             return beamboxStore;
         },
 
-        dispatcherIndex: Dispatcher.register(function(payload) {
+        dispatcherIndex: Dispatcher.register(function (payload) {
             var actionType = payload.actionType;
 
-            if(Constants[actionType]) {
+            if (Constants[actionType]) {
                 beamboxStore.emit(actionType, payload);
-            }
-            else {
+            } else {
                 throw new console.error('unknown method');
             }
         })

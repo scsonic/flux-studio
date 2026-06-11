@@ -1,0 +1,151 @@
+'use strict';
+
+define(['react', 'reactPropTypes', 'jsx!widgets/Modal', 'jsx!widgets/Alert', 'app/constants/progress-constants'], function (React, PropTypes, Modal, Alert, ProgressConstants) {
+    'use strict';
+
+    var acceptableTypes = [ProgressConstants.WAITING, ProgressConstants.STEPPING, ProgressConstants.NONSTOP];
+
+    return React.createClass({
+
+        propTypes: {
+            type: PropTypes.oneOf(acceptableTypes),
+            isOpen: PropTypes.bool,
+            lang: PropTypes.object,
+            caption: PropTypes.string,
+            message: PropTypes.string,
+            percentage: PropTypes.number,
+            hasStop: PropTypes.bool,
+            onStop: PropTypes.func,
+            onFinished: PropTypes.func
+        },
+
+        getDefaultProps: function getDefaultProps() {
+            return {
+                lang: {},
+                isOpen: true,
+                caption: '',
+                message: '',
+                type: ProgressConstants.WAITING,
+                percentage: 0,
+                hasStop: true,
+                onStop: function onStop() {},
+                onFinished: function onFinished() {}
+            };
+        },
+
+        getInitialState: function getInitialState() {
+            return {
+                percentage: this.props.percentage
+            };
+        },
+
+        componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
+            this.setState({
+                percentage: nextProps.percentage
+            });
+        },
+
+        _getButton: function _getButton() {
+            var buttons = [];
+
+            switch (this.props.type) {
+                case ProgressConstants.WAITING:
+                case ProgressConstants.STEPPING:
+                    buttons.push({
+                        label: this.props.lang.alert.stop,
+                        dataAttrs: {
+                            'ga-event': 'stop'
+                        },
+                        onClick: this.props.onStop
+                    });
+                    break;
+                case ProgressConstants.NONSTOP:
+                    // No button
+                    break;
+            }
+
+            if (false === this.props.hasStop) {
+                // clear button
+                buttons = [];
+            }
+
+            return buttons;
+        },
+
+        _renderMessage: function _renderMessage() {
+            var message,
+                progressIcon = this._renderIcon();
+
+            switch (this.props.type) {
+                case ProgressConstants.WAITING:
+                case ProgressConstants.STEPPING:
+                    message = React.createElement(
+                        'div',
+                        null,
+                        React.createElement(
+                            'p',
+                            null,
+                            this.props.message
+                        ),
+                        progressIcon
+                    );
+                    break;
+                case ProgressConstants.NONSTOP:
+                case ProgressConstants.NONSTOP_WITH_MESSAGE:
+                    message = progressIcon;
+                    break;
+            }
+
+            return message;
+        },
+
+        _renderIcon: function _renderIcon() {
+            var icon,
+                progressStyle = {
+                width: (this.state.percentage || 0) + '%'
+            };
+
+            switch (this.props.type) {
+                case ProgressConstants.WAITING:
+                case ProgressConstants.NONSTOP:
+                case ProgressConstants.NONSTOP_WITH_MESSAGE:
+                    icon = React.createElement('div', { className: 'spinner-roller spinner-roller-reverse' });
+                    break;
+                case ProgressConstants.STEPPING:
+                    icon = React.createElement(
+                        'div',
+                        { className: 'progress-bar', 'data-percentage': this.props.percentage },
+                        React.createElement('div', { className: 'current-progress', style: progressStyle })
+                    );
+                    break;
+            }
+
+            return icon;
+        },
+
+        render: function render() {
+            if (false === this.props.isOpen) {
+                return React.createElement('div', null);
+            }
+
+            var buttons = this._getButton(),
+                progressIcon = this._renderIcon(),
+                message = this._renderMessage(),
+                content = React.createElement(Alert, {
+                lang: this.props.lang,
+                caption: this.props.caption,
+                message: message,
+                buttons: buttons
+            }),
+                className = {
+                'shadow-modal': true,
+                'waiting': ProgressConstants.WAITING === this.props.type,
+                'modal-progress': true,
+                'modal-progress-nonstop': ProgressConstants.NONSTOP === this.props.type,
+                'modal-progress-nonstop-with-message': ProgressConstants.NONSTOP_WITH_MESSAGE === this.props.type
+            };
+
+            return React.createElement(Modal, { className: className, content: content, disabledEscapeOnBackground: false });
+        }
+    });
+});

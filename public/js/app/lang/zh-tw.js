@@ -1,5 +1,9 @@
-define(function() {
+'use strict';
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+define(function () {
+    var _monitor;
 
     return {
         general: {
@@ -169,7 +173,7 @@ define(function() {
             connect: '連接',
             back: '返回',
             retry: '重試',
-            no_machine : '目前沒有機器或已設定過連線，跳過此步驟',
+            no_machine: '目前沒有機器或已設定過連線，跳過此步驟',
 
             // specific caption/content
             invalid_device_name: '機器名稱只能使用中文，英文、數字、空格以及特殊字元 ( ) - _ ’ \'',
@@ -441,7 +445,7 @@ define(function() {
                 unbind_device: '確認要不再綁定此機器?',
                 CLOUD_UNKNOWN_ERROR: '機器無法連接到雲端伺服器. 請重新啟動機器. (General)',
                 CLOUD_SESSION_CONNECTION_ERROR: '機器無法連接到雲端伺服器. 請重新啟動機器. (Session)',
-                SERVER_INTERNAL_ERROR: '伺服器發生錯誤，請稍後再試.',
+                SERVER_INTERNAL_ERROR: '伺服器發生錯誤，請稍後再試.'
             }
         },
         print: {
@@ -475,11 +479,11 @@ define(function() {
                 solidLayerBottom: '底部實心層數',
                 density: '填充密度',
                 pattern: '填充圖樣',
-                auto: 'auto',                       // do not change
-                line: '線狀',                       // do not change
-                rectilinear: '直線',         // do not change
-                rectilinearGrid: '直線格狀',// do not change
-                honeycomb: '蜂巢狀',             // do not change
+                auto: 'auto', // do not change
+                line: '線狀', // do not change
+                rectilinear: '直線', // do not change
+                rectilinearGrid: '直線格狀', // do not change
+                honeycomb: '蜂巢狀', // do not change
                 offset: '位移',
                 xyOffset: '水平擴張',
                 zOffset: 'Z 軸位移',
@@ -536,68 +540,55 @@ define(function() {
                 firstLayerTemperature: '首層溫度',
                 flexibleMaterial: '軟性材料'
             },
-            mode: [
-                {
-                    value: 'beginner',
-                    label: '入門',
-                    checked: true
-                },
-                {
-                    value: 'expert',
-                    label: '專家'
-                }
-            ],
+            mode: [{
+                value: 'beginner',
+                label: '入門',
+                checked: true
+            }, {
+                value: 'expert',
+                label: '專家'
+            }],
             params: {
                 beginner: {
                     print_speed: {
                         text: '列印速度',
-                        options: [
-                            {
-                                value: 'slow',
-                                label: '中'
-                            },
-                            {
-                                value: 'fast',
-                                label: '快',
-                                selected: true
-                            }
-                        ]
+                        options: [{
+                            value: 'slow',
+                            label: '中'
+                        }, {
+                            value: 'fast',
+                            label: '快',
+                            selected: true
+                        }]
                     },
                     material: {
                         text: '材質',
-                        options: [
-                            {
-                                value: 'pla',
-                                label: 'PLA',
-                                selected: true
-                            }
-                        ]
+                        options: [{
+                            value: 'pla',
+                            label: 'PLA',
+                            selected: true
+                        }]
                     },
                     support: {
                         text: '支撐',
                         on: '支撐',
                         off: '關閉',
-                        options: [
-                            {
-                                value: 'everywhere',
-                                label: 'Everywhere',
-                                checked: true
-                            },
-                            {
-                                value: 'nowhere',
-                                label: 'nowhere'
-                            }
-                        ]
+                        options: [{
+                            value: 'everywhere',
+                            label: 'Everywhere',
+                            checked: true
+                        }, {
+                            value: 'nowhere',
+                            label: 'nowhere'
+                        }]
                     },
                     platform: {
                         text: '平台',
-                        options: [
-                            {
-                                value: 'raft',
-                                label: '墊片',
-                                selected: true
-                            }
-                        ]
+                        options: [{
+                            value: 'raft',
+                            label: '墊片',
+                            selected: true
+                        }]
                     }
                 },
                 expert: {
@@ -618,27 +609,22 @@ define(function() {
                     },
                     support: {
                         text: 'Support',
-                        options: [
-                            {
-                                value: 'everywhere',
-                                label: 'Everywhere',
-                                checked: true
-                            },
-                            {
-                                value: 'nowhere',
-                                label: 'nowhere'
-                            }
-                        ]
+                        options: [{
+                            value: 'everywhere',
+                            label: 'Everywhere',
+                            checked: true
+                        }, {
+                            value: 'nowhere',
+                            label: 'nowhere'
+                        }]
                     },
                     platform: {
                         text: 'Platform',
-                        options: [
-                            {
-                                value: 'raft',
-                                label: 'Raft',
-                                checked: true
-                            }
-                        ]
+                        options: [{
+                            value: 'raft',
+                            label: 'Raft',
+                            checked: true
+                        }]
                     }
                 }
             },
@@ -806,53 +792,46 @@ define(function() {
                     object_options: {
                         text: '材質',
                         label: '材質選項',
-                        options: [
-                            {
-                                value: 'cardboard',
-                                label: '牛皮紙',
-                                data: {
-                                    laser_speed: 10,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'wood',
-                                label: '木板',
-                                data: {
-                                    laser_speed: 3,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'steel',
-                                label: '皮革',
-                                data: {
-                                    laser_speed: 5,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'paper',
-                                label: '紙',
-                                data: {
-                                    laser_speed: 2,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'cork',
-                                label: '軟木',
-                                data: {
-                                    laser_speed: 5,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'other',
-                                label: '其它',
-                                data: {}
+                        options: [{
+                            value: 'cardboard',
+                            label: '牛皮紙',
+                            data: {
+                                laser_speed: 10,
+                                power: 255
                             }
-                        ]
+                        }, {
+                            value: 'wood',
+                            label: '木板',
+                            data: {
+                                laser_speed: 3,
+                                power: 255
+                            }
+                        }, {
+                            value: 'steel',
+                            label: '皮革',
+                            data: {
+                                laser_speed: 5,
+                                power: 255
+                            }
+                        }, {
+                            value: 'paper',
+                            label: '紙',
+                            data: {
+                                laser_speed: 2,
+                                power: 255
+                            }
+                        }, {
+                            value: 'cork',
+                            label: '軟木',
+                            data: {
+                                laser_speed: 5,
+                                power: 255
+                            }
+                        }, {
+                            value: 'other',
+                            label: '其它',
+                            data: {}
+                        }]
                     },
                     laser_speed: {
                         text: '雷射速度',
@@ -918,42 +897,35 @@ define(function() {
                 text: '最佳',
                 time: '~30分鐘',
                 value: 1200
-            },
-            {
+            }, {
                 id: 'high',
                 text: '精細',
                 time: '~20分鐘',
                 value: 800
-            },
-            {
+            }, {
                 id: 'normal',
                 text: '中等',
                 time: '~10分鐘',
                 value: 400
-            },
-            {
+            }, {
                 id: 'low',
                 text: '快速',
                 time: '~5分鐘',
                 value: 200
-            },
-            {
+            }, {
                 id: 'draft',
                 text: '草稿',
                 time: '~2分鐘',
                 value: 100
             }],
-            save_mode: [
-                {
-                    value: 'stl',
-                    label: 'STL',
-                    checked: true
-                },
-                {
-                    value: 'pcd',
-                    label: 'PCD'
-                },
-            ],
+            save_mode: [{
+                value: 'stl',
+                label: 'STL',
+                checked: true
+            }, {
+                value: 'pcd',
+                label: 'PCD'
+            }],
             manipulation: {
                 filter: '操作',
                 position: '位置',
@@ -998,10 +970,10 @@ define(function() {
             toolbox: {
                 ALIGN_LEFT: '向左靠齊',
                 ALIGN_RIGHT: '向右靠齊',
-                ALIGN_CENTER : '水平置中',
-                ALIGN_TOP : '向上靠齊',
-                ALIGN_MIDDLE : '垂直置中',
-                ALIGN_BOTTOM : '向下靠齊',
+                ALIGN_CENTER: '水平置中',
+                ALIGN_TOP: '向上靠齊',
+                ALIGN_MIDDLE: '垂直置中',
+                ALIGN_BOTTOM: '向下靠齊',
                 ARRANGE_HORIZON: '水平平均分配',
                 ARRANGE_VERTICAL: '垂直平均分配',
                 ARRANGE_DIAGONAL: '對角平均分配'
@@ -1023,7 +995,7 @@ define(function() {
             left_panel: {
                 insert_object: '插入物件',
                 preview: '相機預覽',
-                image_trace:'影像描圖' ,
+                image_trace: '影像描圖',
                 advanced: '進階選項',
                 suggest_calibrate_camera_first: '提醒您：\n第一次使用相機，請先進行相機校正。並在每次使用時將平台對焦，以取得最好的效果。',
                 end_preview: '結束預覽模式',
@@ -1110,7 +1082,7 @@ define(function() {
                         max: 100,
                         step: 0.1
                     }
-                },
+                }
             },
             bottom_right_panel: {
                 convert_text_to_path_before_export: '部分字型在不同系統間有差異，輸出前請將字體轉換成路徑，以確保文字正確顯示。轉換文字至路徑中...'
@@ -1261,90 +1233,58 @@ define(function() {
             enable: '開啟',
             beambox_should_use_touch_panel_to_adjust: '請至 Beambox 觸控面板調整設定。'
         },
-        monitor: {
-            change_filament                     : 'CHANGE FILLAMENT',
-            browse_file                         : 'BROWSE FILE',
-            monitor                             : 'MONITOR',
-            currentTemperature                  : 'Current Temp',
-            nothingToPrint                      : 'There is nothing to print',
-            go                                  : '開始',
-            start                               : '開始',
-            pause                               : '暫停',
-            stop                                : '停止',
-            record                              : 'RECORD',
-            camera                              : '相機',
-            connecting                          : '連線中，請稍候',
-            HEAD_OFFLINE                        : '#110 沒有偵測到工具頭\n請確認工具頭傳輸線完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
-            HEAD_ERROR_CALIBRATING              : '#112 工具頭校正失誤\n請重新裝載工具頭，並確認磁鐵關節的附著',
-            HEAD_ERROR_FAN_FAILURE              : '#113 風扇無法轉動\n請嘗試用細針戳一下 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217732178">暸解更多</a>',
-            HEAD_ERROR_HEAD_OFFLINE             : '#110 沒有偵測到工具頭\n請確認工具頭傳輸線完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
-            HEAD_ERROR_TYPE_ERROR               : '#111 偵測到錯誤工具頭\n請安裝正確的對應工具頭',
-            HEAD_ERROR_INTLK_TRIG               : '#116 偵測到雕刻工具頭傾斜\n請確認金屬棒正確連結，雕刻頭與握架緊密結合以繼續<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217085937">瞭解更多</a>',
-            HEAD_ERROR_RESET                    : '#114 工具頭傳輸線接觸不良\n請確認工具頭傳輸線完整插入以繼續，如持續發生此問題，請聯繫 FLUX 客服 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183167">暸解更多</a>',
-            HEAD_ERROR_TILT                     : '#162 偵測到工具頭傾斜\n請確認球型關節正確附著以繼續',
-            HEAD_ERROR_SHAKE                    : '#162 偵測到工具頭傾斜\n請確認球型關節正確附著以繼續',
-            HEAD_ERROR_HARDWARE_FAILURE         : '#164 工具頭溫度異常\n請聯繫 FLUX 客服<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218415378">暸解更多</a>',
-            'HEAD_ERROR_?'                      : '#199 Toolhead error\nCheck if the toolhead is abnormal',
-            HARDWARE_ERROR_FILAMENT_RUNOUT      : '#121 沒有偵測到線料\n請重新插入新的線料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">瞭解更多</a>',
-            HARDWARE_ERROR_0                    : '#121 沒有偵測到線料\n請重新插入新的線料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">瞭解更多</a>',
-            HARDWARE_ERROR_PLATE_MISSING        : '#122 沒有偵測到工作平台\n請放上工作平台金屬板',
-            HARDWARE_ERROR_ZPROBE_ERROR         : '#123 水平校正失敗\n請移除可能影響校正的物體（噴嘴殘料、工作平台上雜質）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
-            HARDWARE_ERROR_CONVERGENCE_FAILED   : '#123 水平校正失敗\n請移除可能影響校正的物體（噴嘴殘料、工作平台上雜質）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
-            HARDWARE_ERROR_HOME_FAILED          : '#124 原點校正失敗\n請排除軌道上異物，確定傳輸線不會被夾到 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>',
-            HARDWARE_ERROR_MAINBOARD_ERROR      : '#401 主板沒有回應。請聯繫 FLUX 客服。',
-            HARDWARE_ERROR_SUBSYSTEM_ERROR      : '#402 子系統沒有回應。請聯繫 FLUX 客服。',
-            HARDWARE_ERROR_SENSOR_ERROR         : '溫度偵測器發生問題。請聯繫 FLUX 客服。',
-            HARDWARE_ERROR_SENSOR_ERROR_FSR     : '壓力感測晶片讀數錯誤',
-            HARDWARE_ERROR_PUMP_ERROR           : '#900 水冷未開，請聯繫客服 (02) 2651-3171',
-            HARDWARE_ERROR_DOOR_OPENED          : '#901 門蓋開啟，將門蓋關上以繼續',
-            HARDWARE_ERROR_OVER_TEMPERATURE     : '#902 水溫過高，請稍後再繼續',
-            USER_OPERATION_ROTARY_PAUSE         : '請切換旋轉軸馬達開關',
-            USER_OPERATION_ROTARY_PAUSE         : '請切換旋轉軸馬達開關',
-            WRONG_HEAD                          : '請更換成列印工具頭',
-            USER_OPERATION                      : '別的使用者正在佔用機器',
-            RESOURCE_BUSY                       : '機器忙碌中\n如果機器沒有在進行動作， 請重新啟動機器',
-            DEVICE_ERROR                        : '機器錯誤\n請重新啟動機器',
-            NO_RESPONSE                         : '機器錯誤\n請重新啟動機器',
-            SUBSYSTEM_ERROR                     : '#402 子系統沒有回應。請聯繫 FLUX 客服。',
-            HARDWARE_FAILURE                    : '機器錯誤\n請重新啟動機器',
-            MAINBOARD_OFFLINE                   : '機器錯誤\n請重新啟動機器',
-            G28_FAILED                          : '#124 原點校正失敗\n請排除軌道上異物，並重新插拔工具頭連接線 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>',
-            FILAMENT_RUNOUT_0                   : '#121 沒有偵測到線料\n請重新插入新的線料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">瞭解更多</a>',
-            USER_OPERATION_FROM_CODE            : '使用操作暫停（更換線料）',
-            processing                          : '處理中',
-            savingPreview                       : '正在產生預覽圖',
-            hour                                : '小時',
-            minute                              : '分',
-            second                              : '秒',
-            left                                : '完成',
-            temperature                         : '溫度',
-            forceStop                           : '是否強制停止現在工作?',
-            upload                              : '上傳',
-            download                            : '下載',
-            fileNotDownloadable                 : '下載不支援此檔案格式',
-            cannotPreview                       : '無法預覽此檔案',
-            extensionNotSupported               : '上傳檔案不支援此檔案格式',
-            fileExistContinue                   : '檔案已存在，是否要覆蓋？',
-            confirmGToF                         : 'GCode 上傳後會自動轉檔成 FCode，是否繼續？',
-            updatePrintPresetSetting            : 'FLUX STUDIO 有新的預設列印參數。\n是否要更新？（會刪除目前參數）',
-            confirmFileDelete                   : '是否確定要刪除這個檔案？',
-            task: {
-                EXTRUDER                        : '列印',
-                PRINT                           : '列印',
-                LASER                           : '雷射雕刻',
-                DRAW                            : '數位繪圖',
-                CUT                             : '貼紙切割',
-                VINYL                           : '貼紙切割',
-                BEAMBOX                         : '雷射雕刻',
-                'N/A'                           : '自由模式'
-            },
-            device: {
-                EXTRUDER                        : '列印工具頭',
-                LASER                           : '雕刻工具頭',
-                DRAW                            : '繪製工具頭'
-            },
-            cant_get_toolhead_version           : '無法取得最新版本資訊'
-        },
+        monitor: (_monitor = {
+            change_filament: 'CHANGE FILLAMENT',
+            browse_file: 'BROWSE FILE',
+            monitor: 'MONITOR',
+            currentTemperature: 'Current Temp',
+            nothingToPrint: 'There is nothing to print',
+            go: '開始',
+            start: '開始',
+            pause: '暫停',
+            stop: '停止',
+            record: 'RECORD',
+            camera: '相機',
+            connecting: '連線中，請稍候',
+            HEAD_OFFLINE: '#110 沒有偵測到工具頭\n請確認工具頭傳輸線完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
+            HEAD_ERROR_CALIBRATING: '#112 工具頭校正失誤\n請重新裝載工具頭，並確認磁鐵關節的附著',
+            HEAD_ERROR_FAN_FAILURE: '#113 風扇無法轉動\n請嘗試用細針戳一下 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217732178">暸解更多</a>',
+            HEAD_ERROR_HEAD_OFFLINE: '#110 沒有偵測到工具頭\n請確認工具頭傳輸線完整插入 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183157">暸解更多</a>',
+            HEAD_ERROR_TYPE_ERROR: '#111 偵測到錯誤工具頭\n請安裝正確的對應工具頭',
+            HEAD_ERROR_INTLK_TRIG: '#116 偵測到雕刻工具頭傾斜\n請確認金屬棒正確連結，雕刻頭與握架緊密結合以繼續<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/217085937">瞭解更多</a>',
+            HEAD_ERROR_RESET: '#114 工具頭傳輸線接觸不良\n請確認工具頭傳輸線完整插入以繼續，如持續發生此問題，請聯繫 FLUX 客服 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218183167">暸解更多</a>',
+            HEAD_ERROR_TILT: '#162 偵測到工具頭傾斜\n請確認球型關節正確附著以繼續',
+            HEAD_ERROR_SHAKE: '#162 偵測到工具頭傾斜\n請確認球型關節正確附著以繼續',
+            HEAD_ERROR_HARDWARE_FAILURE: '#164 工具頭溫度異常\n請聯繫 FLUX 客服<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218415378">暸解更多</a>',
+            'HEAD_ERROR_?': '#199 Toolhead error\nCheck if the toolhead is abnormal',
+            HARDWARE_ERROR_FILAMENT_RUNOUT: '#121 沒有偵測到線料\n請重新插入新的線料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">瞭解更多</a>',
+            HARDWARE_ERROR_0: '#121 沒有偵測到線料\n請重新插入新的線料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">瞭解更多</a>',
+            HARDWARE_ERROR_PLATE_MISSING: '#122 沒有偵測到工作平台\n請放上工作平台金屬板',
+            HARDWARE_ERROR_ZPROBE_ERROR: '#123 水平校正失敗\n請移除可能影響校正的物體（噴嘴殘料、工作平台上雜質）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
+            HARDWARE_ERROR_CONVERGENCE_FAILED: '#123 水平校正失敗\n請移除可能影響校正的物體（噴嘴殘料、工作平台上雜質）<a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931767">暸解更多</a>',
+            HARDWARE_ERROR_HOME_FAILED: '#124 原點校正失敗\n請排除軌道上異物，確定傳輸線不會被夾到 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>',
+            HARDWARE_ERROR_MAINBOARD_ERROR: '#401 主板沒有回應。請聯繫 FLUX 客服。',
+            HARDWARE_ERROR_SUBSYSTEM_ERROR: '#402 子系統沒有回應。請聯繫 FLUX 客服。',
+            HARDWARE_ERROR_SENSOR_ERROR: '溫度偵測器發生問題。請聯繫 FLUX 客服。',
+            HARDWARE_ERROR_SENSOR_ERROR_FSR: '壓力感測晶片讀數錯誤',
+            HARDWARE_ERROR_PUMP_ERROR: '#900 水冷未開，請聯繫客服 (02) 2651-3171',
+            HARDWARE_ERROR_DOOR_OPENED: '#901 門蓋開啟，將門蓋關上以繼續',
+            HARDWARE_ERROR_OVER_TEMPERATURE: '#902 水溫過高，請稍後再繼續',
+            USER_OPERATION_ROTARY_PAUSE: '請切換旋轉軸馬達開關'
+        }, _defineProperty(_monitor, 'USER_OPERATION_ROTARY_PAUSE', '請切換旋轉軸馬達開關'), _defineProperty(_monitor, 'WRONG_HEAD', '請更換成列印工具頭'), _defineProperty(_monitor, 'USER_OPERATION', '別的使用者正在佔用機器'), _defineProperty(_monitor, 'RESOURCE_BUSY', '機器忙碌中\n如果機器沒有在進行動作， 請重新啟動機器'), _defineProperty(_monitor, 'DEVICE_ERROR', '機器錯誤\n請重新啟動機器'), _defineProperty(_monitor, 'NO_RESPONSE', '機器錯誤\n請重新啟動機器'), _defineProperty(_monitor, 'SUBSYSTEM_ERROR', '#402 子系統沒有回應。請聯繫 FLUX 客服。'), _defineProperty(_monitor, 'HARDWARE_FAILURE', '機器錯誤\n請重新啟動機器'), _defineProperty(_monitor, 'MAINBOARD_OFFLINE', '機器錯誤\n請重新啟動機器'), _defineProperty(_monitor, 'G28_FAILED', '#124 原點校正失敗\n請排除軌道上異物，並重新插拔工具頭連接線 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931807">暸解更多</a>'), _defineProperty(_monitor, 'FILAMENT_RUNOUT_0', '#121 沒有偵測到線料\n請重新插入新的線料 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/218931757">瞭解更多</a>'), _defineProperty(_monitor, 'USER_OPERATION_FROM_CODE', '使用操作暫停（更換線料）'), _defineProperty(_monitor, 'processing', '處理中'), _defineProperty(_monitor, 'savingPreview', '正在產生預覽圖'), _defineProperty(_monitor, 'hour', '小時'), _defineProperty(_monitor, 'minute', '分'), _defineProperty(_monitor, 'second', '秒'), _defineProperty(_monitor, 'left', '完成'), _defineProperty(_monitor, 'temperature', '溫度'), _defineProperty(_monitor, 'forceStop', '是否強制停止現在工作?'), _defineProperty(_monitor, 'upload', '上傳'), _defineProperty(_monitor, 'download', '下載'), _defineProperty(_monitor, 'fileNotDownloadable', '下載不支援此檔案格式'), _defineProperty(_monitor, 'cannotPreview', '無法預覽此檔案'), _defineProperty(_monitor, 'extensionNotSupported', '上傳檔案不支援此檔案格式'), _defineProperty(_monitor, 'fileExistContinue', '檔案已存在，是否要覆蓋？'), _defineProperty(_monitor, 'confirmGToF', 'GCode 上傳後會自動轉檔成 FCode，是否繼續？'), _defineProperty(_monitor, 'updatePrintPresetSetting', 'FLUX STUDIO 有新的預設列印參數。\n是否要更新？（會刪除目前參數）'), _defineProperty(_monitor, 'confirmFileDelete', '是否確定要刪除這個檔案？'), _defineProperty(_monitor, 'task', {
+            EXTRUDER: '列印',
+            PRINT: '列印',
+            LASER: '雷射雕刻',
+            DRAW: '數位繪圖',
+            CUT: '貼紙切割',
+            VINYL: '貼紙切割',
+            BEAMBOX: '雷射雕刻',
+            'N/A': '自由模式'
+        }), _defineProperty(_monitor, 'device', {
+            EXTRUDER: '列印工具頭',
+            LASER: '雕刻工具頭',
+            DRAW: '繪製工具頭'
+        }), _defineProperty(_monitor, 'cant_get_toolhead_version', '無法取得最新版本資訊'), _monitor),
         alert: {
             caption: '錯誤',
             duplicated_preset_name: '重複的預設名稱',
@@ -1409,7 +1349,7 @@ define(function() {
             unknown_device: '無法與機器建立連線，請確認 USB 有連接於機器',
             important_update: {
                 caption: '重要更新',
-                message: 'Delta 有重要韌體更新，是否要現在更新？',
+                message: 'Delta 有重要韌體更新，是否要現在更新？'
             },
             unsupport_osx_version: '不支援此 Mac OS X 版本',
             need_password: '需要密碼與機器建立連線',
@@ -1540,7 +1480,7 @@ define(function() {
             startPrintDeltaPlus: '確認將磁鐵列印版放上平台',
             runningMovementTests: '進行運動測試',
             connectingMachine: '連接機器中',
-            movementTestFailed: { caption: '無法通過運動測試',  message: '1. 請確認工具頭連接線不會造成過大阻力<br/>2. 上蓋工具頭連接線接頭沒入約一半<br/>3. 可嘗試將工具頭連接線順時針或逆時針旋轉 180 度再插入<br/>4. 參考 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/115003674128">此篇文章</a><br/>再試一次？' },
+            movementTestFailed: { caption: '無法通過運動測試', message: '1. 請確認工具頭連接線不會造成過大阻力<br/>2. 上蓋工具頭連接線接頭沒入約一半<br/>3. 可嘗試將工具頭連接線順時針或逆時針旋轉 180 度再插入<br/>4. 參考 <a target="_blank" href="https://flux3dp.zendesk.com/hc/zh-tw/articles/115003674128">此篇文章</a><br/>再試一次？' },
             befaultTutorialWelcome: '非常感謝您購買 FLUX Delta+！<br/><br/>以下內容能幫助您快速瞭解並使用您的 FLUX Delta+<br/>期待 FLUX Delta+ 能陪伴您度過美好的時光<br/><br/>＊請務必先觀看教學影片！請打開中文字幕',
             openBrowser: '開啟網頁',
             welcome: '歡迎使用'
@@ -1568,25 +1508,25 @@ define(function() {
             extruderOnly: '請使用列印工具頭來做校正'
         },
         head_info: {
-            ID                  : 'ID',
-            VERSION             : '工具頭韌體版本',
-            HEAD_MODULE         : '工具頭種類',
-            EXTRUDER            : '列印模組',
-            LASER               : '雷刻模組',
-            USED                : '使用時間',
-            HARDWARE_VERSION    : '硬體版本',
-            FOCAL_LENGTH        : '焦距調整',
-            hours               : '小時',
-            cannot_get_info     : '無法讀取工具頭資訊'
+            ID: 'ID',
+            VERSION: '工具頭韌體版本',
+            HEAD_MODULE: '工具頭種類',
+            EXTRUDER: '列印模組',
+            LASER: '雷刻模組',
+            USED: '使用時間',
+            HARDWARE_VERSION: '硬體版本',
+            FOCAL_LENGTH: '焦距調整',
+            hours: '小時',
+            cannot_get_info: '無法讀取工具頭資訊'
         },
         topbar: {
             align_toolbox: {
                 ALIGN_LEFT: '向左靠齊',
                 ALIGN_RIGHT: '向右靠齊',
-                ALIGN_CENTER : '水平置中',
-                ALIGN_TOP : '向上靠齊',
-                ALIGN_MIDDLE : '垂直置中',
-                ALIGN_BOTTOM : '向下靠齊',
+                ALIGN_CENTER: '水平置中',
+                ALIGN_TOP: '向上靠齊',
+                ALIGN_MIDDLE: '垂直置中',
+                ALIGN_BOTTOM: '向下靠齊',
                 ARRANGE_HORIZON: '水平平均分配',
                 ARRANGE_VERTICAL: '垂直平均分配'
             }

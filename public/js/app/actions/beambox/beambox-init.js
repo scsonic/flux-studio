@@ -1,31 +1,19 @@
-define([
-    'helpers/api/config',
-    'app/actions/beambox/beambox-preference',
-    'app/actions/beambox/constant',
-    'jsx!app/actions/beambox/Object-Panels-Controller',
-    'jsx!app/actions/beambox/Laser-Panel-Controller',
-    'jsx!app/actions/beambox/Image-Trace-Panel-Controller'
-], function (
-    ConfigHelper,
-    BeamboxPreference,
-    Constant,
-    ObjectPanelsController,
-    LaserPanelController,
-    ImageTracePanelController
-) {
-    const init = () => {
+'use strict';
+
+define(['helpers/api/config', 'app/actions/beambox/beambox-preference', 'app/actions/beambox/constant', 'jsx!app/actions/beambox/Object-Panels-Controller', 'jsx!app/actions/beambox/Laser-Panel-Controller', 'jsx!app/actions/beambox/Image-Trace-Panel-Controller'], function (ConfigHelper, BeamboxPreference, Constant, ObjectPanelsController, LaserPanelController, ImageTracePanelController) {
+    var init = function init() {
         ObjectPanelsController.init('object-panels-placeholder');
         LaserPanelController.init('layer-laser-panel-placeholder');
         ImageTracePanelController.init('image-trace-panel-placeholder');
     };
 
-    const displayGuides = () => {
-        const guidesLines = (() => {
-            const svgdoc = document.getElementById('svgcanvas').ownerDocument;
-            const NS = svgedit.NS;
-            const linesGroup = svgdoc.createElementNS(NS.SVG, 'svg');
-            const lineVertical = svgdoc.createElementNS(NS.SVG, 'line');
-            const lineHorizontal = svgdoc.createElementNS(NS.SVG, 'line');
+    var displayGuides = function displayGuides() {
+        var guidesLines = function () {
+            var svgdoc = document.getElementById('svgcanvas').ownerDocument;
+            var NS = svgedit.NS;
+            var linesGroup = svgdoc.createElementNS(NS.SVG, 'svg');
+            var lineVertical = svgdoc.createElementNS(NS.SVG, 'line');
+            var lineHorizontal = svgdoc.createElementNS(NS.SVG, 'line');
 
             svgedit.utilities.assignAttributes(linesGroup, {
                 'id': 'guidesLines',
@@ -33,7 +21,7 @@ define([
                 'height': '100%',
                 'x': 0,
                 'y': 0,
-                'viewBox': `0 0 ${Constant.dimension.width} ${Constant.dimension.height}`,
+                'viewBox': '0 0 ' + Constant.dimension.width + ' ' + Constant.dimension.height,
                 'style': 'pointer-events: none'
             });
 
@@ -70,7 +58,7 @@ define([
             linesGroup.appendChild(lineHorizontal);
             linesGroup.appendChild(lineVertical);
             return linesGroup;
-        })();
+        }();
 
         $('#canvasBackground').get(0).appendChild(guidesLines);
     };

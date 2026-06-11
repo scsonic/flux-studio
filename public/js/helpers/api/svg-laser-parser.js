@@ -1,71 +1,62 @@
+'use strict';
+
 /**
  * API svg laser parser
  * Ref: https://github.com/flux3dp/fluxghost/wiki/websocket-svg-laser-parser
  */
-define([
-    'jquery',
-    'helpers/websocket',
-    'helpers/convertToTypedArray',
-    'helpers/data-history',
-    'helpers/api/set-params'
-], function(
-    $,
-    Websocket,
-    convertToTypedArray,
-    history,
-    setParams
-) {
+define(['jquery', 'helpers/websocket', 'helpers/convertToTypedArray', 'helpers/data-history', 'helpers/api/set-params'], function ($, Websocket, convertToTypedArray, history, setParams) {
     'use strict';
 
     // Because the preview image size is 640x640
+
     var MAXWIDTH = 640;
 
-    return function(opts) {
+    return function (opts) {
         opts = opts || {};
         opts.type = opts.type || 'laser';
 
         var apiMethod = {
-                laser: 'svg-laser-parser',
-                svgeditor: 'svgeditor-laser-parser',
-                draw: 'pen-svg-parser',
-                cut: 'svg-vinyl-parser',
-                mill: 'svg-vinyl-parser'
-            }[opts.type],
+            laser: 'svg-laser-parser',
+            svgeditor: 'svgeditor-laser-parser',
+            draw: 'pen-svg-parser',
+            cut: 'svg-vinyl-parser',
+            mill: 'svg-vinyl-parser'
+        }[opts.type],
             ws = new Websocket({
-                method: apiMethod,
-                onMessage: function(data) {
-                    events.onMessage(data);
-                },
+            method: apiMethod,
+            onMessage: function onMessage(data) {
+                events.onMessage(data);
+            },
 
-                onError: function(data) {
-                    events.onError(data);
-                },
+            onError: function onError(data) {
+                events.onError(data);
+            },
 
-                onFatal: opts.onFatal
-            }),
+            onFatal: opts.onFatal
+        }),
             uploaded_svg = [],
             lastOrder = '',
             events = {
-                onMessage: function() {}
-            },
+            onMessage: function onMessage() {}
+        },
             History = history(),
             goNextUpload = true,
             uploadQueue = [],
-            computePreviewImageSize = function(size) {
-                var height = size.height,
-                    width = size.width,
-                    longerSide = Math.max(width, height),
-                    ratio;
+            computePreviewImageSize = function computePreviewImageSize(size) {
+            var height = size.height,
+                width = size.width,
+                longerSide = Math.max(width, height),
+                ratio;
 
-                ratio = MAXWIDTH / longerSide;
-                height = height * ratio;
-                width = width * ratio;
+            ratio = MAXWIDTH / longerSide;
+            height = height * ratio;
+            width = width * ratio;
 
-                return {
-                    width: width,
-                    height: height
-                };
+            return {
+                width: width,
+                height: height
             };
+        };
 
         return {
             connection: ws,
@@ -77,60 +68,55 @@ define([
              *
              * @return {Promise}
              */
-            upload: function(files, opts) {
+            upload: function upload(files, opts) {
                 var self = this,
                     $deferred = $.Deferred(),
                     length = files.length,
                     currIndex = 0,
                     order_name = 'upload',
-                    setMessages = function(file, isBroken, warningCollection) {
-                        file.status = (0 < warningCollection.length ? 'bad' : 'good');
-                        file.messages = warningCollection;
-                        file.isBroken = isBroken;
+                    setMessages = function setMessages(file, isBroken, warningCollection) {
+                    file.status = 0 < warningCollection.length ? 'bad' : 'good';
+                    file.messages = warningCollection;
+                    file.isBroken = isBroken;
 
-                        return file;
-                    },
-                    sendFile = function(file, isEnd) {
-                        var warningCollection = [];
+                    return file;
+                },
+                    sendFile = function sendFile(file, isEnd) {
+                    var warningCollection = [];
 
-                        events.onMessage = function(data) {
+                    events.onMessage = function (data) {
 
-                            switch (data.status) {
-                                case 'continue':
-                                    ws.send(file.data);
-                                    break;
-                                case 'ok':
-                                    self.get(file).done(function(response) {
-                                        file.blob = response.blob;
-                                        file.imgSize = response.size;
+                        switch (data.status) {
+                            case 'continue':
+                                ws.send(file.data);
+                                break;
+                            case 'ok':
+                                self.get(file).done(function (response) {
+                                    file.blob = response.blob;
+                                    file.imgSize = response.size;
 
-                                        file = setMessages(file, false, warningCollection);
-                                        $deferred.notify('next');
-                                    });
-                                    break;
-                                case 'warning':
-                                    warningCollection.push(data.message);
-                                    break;
-                            }
-
-                        };
-                        events.onError = function(data) {
-                            warningCollection.push(data.error);
-                            file = setMessages(file, true, warningCollection);
-                            $deferred.notify('next');
-                        };
-                        var args = [
-                            order_name,
-                            file.uploadName,
-                            file.size
-                        ];
-                        if (opts && opts.model === 'fbb1p') {
-                            args.push('-pro');
+                                    file = setMessages(file, false, warningCollection);
+                                    $deferred.notify('next');
+                                });
+                                break;
+                            case 'warning':
+                                warningCollection.push(data.message);
+                                break;
                         }
-                        ws.send(args.join(' '));
                     };
+                    events.onError = function (data) {
+                        warningCollection.push(data.error);
+                        file = setMessages(file, true, warningCollection);
+                        $deferred.notify('next');
+                    };
+                    var args = [order_name, file.uploadName, file.size];
+                    if (opts && opts.model === 'fbb1p') {
+                        args.push('-pro');
+                    }
+                    ws.send(args.join(' '));
+                };
 
-                $deferred.progress(function(action) {
+                $deferred.progress(function (action) {
                     var file,
                         hasBadFiles = false;
 
@@ -138,10 +124,10 @@ define([
                         file = files[currIndex];
 
                         if ('undefined' === typeof file) {
-                            hasBadFiles = files.some(function(file) {
+                            hasBadFiles = files.some(function (file) {
                                 return 'bad' === file.status;
                             });
-                            $deferred.resolve({files: files, hasBadFiles: hasBadFiles });
+                            $deferred.resolve({ files: files, hasBadFiles: hasBadFiles });
                         } else if (file.extension && 'svg' === file.extension.toLowerCase()) {
                             sendFile(file);
                             currIndex += 1;
@@ -164,23 +150,20 @@ define([
              *
              * @return {Promise}
              */
-            get: function(file) {
+            get: function get(file) {
                 lastOrder = 'get';
 
                 var $deferred = $.Deferred(),
-                    args = [
-                        lastOrder,
-                        file.uploadName
-                    ],
+                    args = [lastOrder, file.uploadName],
                     blobs = [],
                     blob,
                     total_length = 0,
                     size = {
-                        height: 0,
-                        width: 0
-                    };
+                    height: 0,
+                    width: 0
+                };
 
-                events.onMessage = function(data) {
+                events.onMessage = function (data) {
 
                     if ('continue' === data.status) {
                         total_length = data.length;
@@ -195,10 +178,9 @@ define([
                             $deferred.resolve({ size: size, blob: blob });
                         }
                     }
-
                 };
 
-                events.onError = function(response) {
+                events.onError = function (response) {
                     $deferred.reject(response);
                 };
 
@@ -221,65 +203,51 @@ define([
              *      {Array} image_data    - grayscale image data
              * @return {Promise}
              */
-            compute: function(args) {
+            compute: function compute(args) {
                 var $deferred = $.Deferred(),
                     requests = [],
                     requestHeader,
                     nextData,
                     currIndex = 0,
-                    sendData = (nextData) => {
-                        ws.send(nextData);
-                        currIndex += 1;
+                    sendData = function sendData(nextData) {
+                    ws.send(nextData);
+                    currIndex += 1;
 
-                        nextData = requests[currIndex];
+                    nextData = requests[currIndex];
 
-                        if (true === nextData instanceof Uint8Array) {
-                            sendData(nextData);
-                        }
-                    };
+                    if (true === nextData instanceof Uint8Array) {
+                        sendData(nextData);
+                    }
+                };
 
                 lastOrder = 'compute';
 
-                args.forEach(function(obj) {
-                    requestHeader = [
-                        lastOrder,
-                        obj.name,
-                        obj.real_width,
-                        obj.real_height,
-                        obj.tl_position_x,
-                        obj.tl_position_y,
-                        obj.br_position_x,
-                        obj.br_position_y,
-                        obj.rotate,
-                        obj.svg_data.blob.size,
-                        parseInt(obj.width, 10),
-                        parseInt(obj.height, 10)
-                    ];
+                args.forEach(function (obj) {
+                    requestHeader = [lastOrder, obj.name, obj.real_width, obj.real_height, obj.tl_position_x, obj.tl_position_y, obj.br_position_x, obj.br_position_y, obj.rotate, obj.svg_data.blob.size, parseInt(obj.width, 10), parseInt(obj.height, 10)];
 
                     requests.push(requestHeader.join(' '));
                     requests.push(obj.svg_data.blob);
                     requests.push(convertToTypedArray(obj.image_data, Uint8Array));
                 });
 
-                events.onMessage = function(data) {
+                events.onMessage = function (data) {
                     switch (data.status) {
-                    case 'continue':
-                    case 'ok':
-                        $deferred.notify('next');
-                        break;
-                    default:
-                        // TODO: do something?
-                        break;
+                        case 'continue':
+                        case 'ok':
+                            $deferred.notify('next');
+                            break;
+                        default:
+                            // TODO: do something?
+                            break;
                     }
                 };
 
-                $deferred.progress((action) => {
+                $deferred.progress(function (action) {
                     nextData = requests[currIndex];
 
                     if ('next' === action && 'undefined' !== typeof nextData) {
                         sendData(nextData);
-                    }
-                    else {
+                    } else {
                         $deferred.resolve();
                     }
                 });
@@ -288,17 +256,13 @@ define([
 
                 return $deferred.promise();
             },
-            getTaskCode: function(names, opts) {
+            getTaskCode: function getTaskCode(names, opts) {
                 opts = opts || {};
-                opts.onProgressing = opts.onProgressing || function() {};
-                opts.onFinished = opts.onFinished || function() {};
+                opts.onProgressing = opts.onProgressing || function () {};
+                opts.onFinished = opts.onFinished || function () {};
                 lastOrder = 'getTaskCode';
 
-                var args = [
-                        'go',
-                        names.join(' '),
-                        opts.fileMode || '-f'
-                    ],
+                var args = ['go', names.join(' '), opts.fileMode || '-f'],
                     blobs = [],
                     duration,
                     total_length = 0,
@@ -313,7 +277,7 @@ define([
                     args.push(svgCanvas.runExtensions('getRotaryAxisAbsoluteCoord'));
                 }
 
-                events.onMessage = function(data) {
+                events.onMessage = function (data) {
 
                     if ('computing' === data.status) {
                         opts.onProgressing(data);
@@ -328,20 +292,19 @@ define([
                             opts.onFinished(blob, args[2], duration);
                         }
                     }
-
                 };
 
-                let loop_compensation = Number(localStorage.getItem('loop_compensation') || '0');
+                var loop_compensation = Number(localStorage.getItem('loop_compensation') || '0');
                 if (loop_compensation > 0) {
-                    ws.send(['set_params', 'loop_compensation', loop_compensation].join(' '));    
+                    ws.send(['set_params', 'loop_compensation', loop_compensation].join(' '));
                 }
                 ws.send(args.join(' '));
             },
-            divideSVG: function() {
+            divideSVG: function divideSVG() {
                 var $deferred = $.Deferred();
                 opts = opts || {};
-                opts.onProgressing = opts.onProgressing || function() {};
-                opts.onFinished = opts.onFinished || function() {};
+                opts.onProgressing = opts.onProgressing || function () {};
+                opts.onFinished = opts.onFinished || function () {};
                 lastOrder = 'divideSVG';
 
                 var args = ['divide_svg'],
@@ -351,7 +314,7 @@ define([
                     finalBlobs = {},
                     currentName = '';
 
-                events.onMessage = function(data) {
+                events.onMessage = function (data) {
                     if (data.name) {
                         currentName = data.name;
                         currentLength = data.length;
@@ -369,16 +332,15 @@ define([
                     } else if (data.status === 'ok') {
                         $deferred.resolve(finalBlobs);
                     }
-
                 };
 
                 ws.send(args.join(' '));
                 return $deferred.promise();
             },
-            uploadPlainSVG: function(file) {
+            uploadPlainSVG: function uploadPlainSVG(file) {
                 var $deferred = $.Deferred();
 
-                events.onMessage = function(data) {
+                events.onMessage = function (data) {
                     switch (data.status) {
                         case 'continue':
                             ws.send(file);
@@ -392,17 +354,17 @@ define([
                     }
                 };
 
-                events.onError = function(data) {
+                events.onError = function (data) {
                     alert(data);
                 };
                 function getBasename(path) {
-                    const pathMatch = path.match(/(.+)[\/\\].+/);
+                    var pathMatch = path.match(/(.+)[\/\\].+/);
                     if (pathMatch[1]) return pathMatch[1];
                     return "";
                 }
                 var reader = new FileReader();
                 reader.onloadend = function (e) {
-                    let svgString = e.target.result;
+                    var svgString = e.target.result;
                     if (file.path) {
                         svgString = svgString.replace('xlink:href="../', 'xlink:href="' + getBasename(file.path) + '/../');
                         svgString = svgString.replace('xlink:href="./', 'xlink:href="' + getBasename(file.path) + '/');
@@ -412,80 +374,70 @@ define([
                         type: 'text/plain'
                     });
 
-                    ws.send([
-                        'upload_plain_svg',
-                        encodeURIComponent(file.name),
-                        file.size
-                    ].join(' '));
+                    ws.send(['upload_plain_svg', encodeURIComponent(file.name), file.size].join(' '));
                 };
                 reader.readAsText(file);
 
                 return $deferred.promise();
             },
-            uploadToSvgeditorAPI: function(files, opts) {
+            uploadToSvgeditorAPI: function uploadToSvgeditorAPI(files, opts) {
                 var $deferred = $.Deferred(),
                     currIndex = 0,
                     order_name = 'svgeditor_upload',
-                    setMessages = function(file, isBroken, warningCollection) {
-                        file.status = (0 < warningCollection.length ? 'bad' : 'good');
-                        file.messages = warningCollection;
-                        file.isBroken = isBroken;
+                    setMessages = function setMessages(file, isBroken, warningCollection) {
+                    file.status = 0 < warningCollection.length ? 'bad' : 'good';
+                    file.messages = warningCollection;
+                    file.isBroken = isBroken;
 
-                        return file;
-                    },
+                    return file;
+                },
+                    sendFile = function sendFile(file, isEnd) {
+                    var warningCollection = [];
 
-                    sendFile = function(file, isEnd) {
-                        var warningCollection = [];
-
-                        events.onMessage = function(data) {
-                            switch (data.status) {
-                                case 'computing':
-                                    opts.onProgressing(data);
-                                    break;
-                                case 'continue':
-                                    ws.send(file.data);
-                                    break;
-                                case 'ok':
-                                    opts.onFinished();
-                                    $deferred.resolve();
-                                    break;
-                                case 'warning':
-                                    warningCollection.push(data.message);
-                                    break;
-                            }
-                        };
-
-                        events.onError = function(data) {
-                            warningCollection.push(data.error);
-                            file = setMessages(file, true, warningCollection);
-                            $deferred.notify('next');
-                        };
-                        var args = [
-                            order_name,
-                            file.uploadName,
-                            file.size,
-                            file.thumbnailSize
-                        ];
-                        if (opts && opts.model === 'fbb1p') {
-                            args.push('-pro');
+                    events.onMessage = function (data) {
+                        switch (data.status) {
+                            case 'computing':
+                                opts.onProgressing(data);
+                                break;
+                            case 'continue':
+                                ws.send(file.data);
+                                break;
+                            case 'ok':
+                                opts.onFinished();
+                                $deferred.resolve();
+                                break;
+                            case 'warning':
+                                warningCollection.push(data.message);
+                                break;
                         }
-                        if (opts) {
-                            switch (opts.engraveDpi) {
-                                case 'low':
-                                    args.push('-ldpi');
-                                    break;
-                                case 'medium':
-                                    args.push('-mdpi');
-                                    break;
-                                case 'high':
-                                    args.push('-hdpi');
-                                    break;
-                            }
-                        }
-                        ws.send(args.join(' '));
                     };
 
-                $deferred.progress(function(action) {
+                    events.onError = function (data) {
+                        warningCollection.push(data.error);
+                        file = setMessages(file, true, warningCollection);
+                        $deferred.notify('next');
+                    };
+                    var args = [order_name, file.uploadName, file.size, file.thumbnailSize];
+                    if (opts && opts.model === 'fbb1p') {
+                        args.push('-pro');
+                    }
+                    if (opts) {
+                        switch (opts.engraveDpi) {
+                            case 'low':
+                                args.push('-ldpi');
+                                break;
+                            case 'medium':
+                                args.push('-mdpi');
+                                break;
+                            case 'high':
+                                args.push('-hdpi');
+                                break;
+                        }
+                    }
+                    ws.send(args.join(' '));
+                };
+
+                $deferred.progress(function (action) {
                     var file,
                         hasBadFiles = false;
 
@@ -493,14 +445,14 @@ define([
                         file = files[currIndex];
 
                         if ('undefined' === typeof file) {
-                            hasBadFiles = files.some(function(file) {
+                            hasBadFiles = files.some(function (file) {
                                 return 'bad' === file.status;
                             });
-                            $deferred.resolve({files: files, hasBadFiles: hasBadFiles });
+                            $deferred.resolve({ files: files, hasBadFiles: hasBadFiles });
                         } else if (file.extension && 'svg' === file.extension.toLowerCase()) {
                             sendFile(file);
                             currIndex += 1;
-                            console.log('currIndex', currIndex)
+                            console.log('currIndex', currIndex);
                         } else {
                             setMessages(file, true, ['NOT_SUPPORT']);
                             currIndex += 1;

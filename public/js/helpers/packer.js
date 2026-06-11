@@ -1,12 +1,15 @@
-define(['jquery'],function($) {
+'use strict';
+
+define(['jquery'], function ($) {
     'use strict';
 
     /// packing files into a blob for user to download, used for saving scene
     /// leading reserve length (12) for tracking where information starts
 
-    var reserveLength = 12, // 999 GB max
-        files   = [],
-        info    = [];
+    var reserveLength = 12,
+        // 999 GB max
+    files = [],
+        info = [];
 
     function addFile(file) {
         files.push(file);
@@ -21,14 +24,14 @@ define(['jquery'],function($) {
         var fileInfo = [],
             totalSize;
 
-        totalSize = files.reduce(function(p, c) {
-            return {size: p.size + c.size};
-        }, {size: 0});
+        totalSize = files.reduce(function (p, c) {
+            return { size: p.size + c.size };
+        }, { size: 0 });
 
         totalSize = totalSize.size;
 
-        files.forEach(function(i) {
-            fileInfo.push({size: i.size, name: i.name});
+        files.forEach(function (i) {
+            fileInfo.push({ size: i.size, name: i.name });
         });
 
         info.unshift(fileInfo);
@@ -37,18 +40,18 @@ define(['jquery'],function($) {
         var infoIndex = _pad(totalSize, reserveLength);
         files.unshift(infoIndex);
 
-        var b = new Blob(files, {type : 'application/scene'});
+        var b = new Blob(files, { type: 'application/scene' });
         return b;
     }
 
     function unpack(source) {
         var d = $.Deferred();
         var _files = [];
-        getInfo(source).then(function(_info) {
+        getInfo(source).then(function (_info) {
             var fileInfo = _info[0],
                 start = reserveLength;
 
-            fileInfo.forEach(function(f) {
+            fileInfo.forEach(function (f) {
                 var end = start + f.size,
                     _file = source.slice(start, end);
 
@@ -69,7 +72,7 @@ define(['jquery'],function($) {
         var d = $.Deferred();
         var test = blob.slice(0, reserveLength);
         var f = new FileReader();
-        f.onload = function() {
+        f.onload = function () {
             d.resolve(parseInt(f.result) + reserveLength);
         };
         f.readAsText(test);
@@ -78,11 +81,11 @@ define(['jquery'],function($) {
 
     function getInfo(blob) {
         var d = $.Deferred();
-        getInfoIndex(blob).then(function(i) {
-            if(i > 0) {
+        getInfoIndex(blob).then(function (i) {
+            if (i > 0) {
                 var data = blob.slice(i);
                 var f = new FileReader();
-                f.onload = function() {
+                f.onload = function () {
                     d.resolve(JSON.parse(f.result));
                 };
                 f.readAsText(data);
@@ -106,10 +109,10 @@ define(['jquery'],function($) {
     }
 
     return {
-        addFile     : addFile,
-        addInfo     : addInfo,
-        pack        : pack,
-        unpack      : unpack,
-        clear       : clear
+        addFile: addFile,
+        addInfo: addInfo,
+        pack: pack,
+        unpack: unpack,
+        clear: clear
     };
 });

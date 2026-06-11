@@ -1,28 +1,31 @@
-define([
-    'app/constants/action-creator-device'
-], (
-    C
-) => {
+'use strict';
 
-    const updateDeviceStatus = (status) => ({
-        type: C.UPDATE_DEVICE_STATUS,
-        status
-    });
+define(['app/constants/action-creator-device'], function (C) {
 
-    const updateJobInfo = (jobInfo) => ({
-        type: C.UPDATE_JOB_INFO,
-        jobInfo
-    });
-
-    const updateUsbFolderExistance = (usbFolderExist) => ({
-        type: C.UPDATE_USB_FOLDER_EXISTANCE,
-        usbFolderExist
-    });
-
-    return {
-        updateDeviceStatus,
-        updateJobInfo,
-        updateUsbFolderExistance
+    var updateDeviceStatus = function updateDeviceStatus(status) {
+        return {
+            type: C.UPDATE_DEVICE_STATUS,
+            status: status
+        };
     };
 
+    var updateJobInfo = function updateJobInfo(jobInfo) {
+        return {
+            type: C.UPDATE_JOB_INFO,
+            jobInfo: jobInfo
+        };
+    };
+
+    var updateUsbFolderExistance = function updateUsbFolderExistance(usbFolderExist) {
+        return {
+            type: C.UPDATE_USB_FOLDER_EXISTANCE,
+            usbFolderExist: usbFolderExist
+        };
+    };
+
+    return {
+        updateDeviceStatus: updateDeviceStatus,
+        updateJobInfo: updateJobInfo,
+        updateUsbFolderExistance: updateUsbFolderExistance
+    };
 });

@@ -1,21 +1,19 @@
-define([
+"use strict";
 
-], function(
+define([], function () {
+    return function (url, onMessage, onError) {
+        return new Promise(function (resolve) {
+            var ws = new WebSocket(url);
 
-) {
-    return function(url, onMessage, onError) {
-        return new Promise((resolve) => {
-            let ws = new WebSocket(url);
-
-            ws.onopen = function() {
+            ws.onopen = function () {
                 resolve(ws);
             };
 
-            ws.onmessage = function(response) {
+            ws.onmessage = function (response) {
                 onMessage(response);
             };
 
-            ws.onerror = function(response) {
+            ws.onerror = function (response) {
                 onError(response);
             };
         });

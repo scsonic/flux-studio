@@ -1,86 +1,49 @@
-define([
-    'jquery',
-    'helpers/websocket',
-    'helpers/api/3d-print-slicing',
-    'helpers/api/fcode-reader',
-    'app/actions/alert-actions',
-    'app/actions/progress-actions',
-    'app/actions/delta/print-global-interactions',
-    'app/stores/progress-store',
-    'app/constants/global-constants',
-    'app/constants/device-constants',
-    'app/constants/progress-constants',
-    'app/constants/error-constants',
-    'helpers/packer',
-    'helpers/i18n',
-    'helpers/api/config',
-    'app/actions/global-actions',
-    'helpers/sprintf',
-    'helpers/packer',
-    'Rx',
-    'app/app-settings',
-    'helpers/local-storage',
-    'helpers/socket-master',
-    // non-return value
-    'threeOrbitControls',
-    'threeTrackballControls',
-    'threeTransformControls',
-    'threeSTLLoader',
-    'threeOBJLoader',
-    'threeCircularGridHelper',
-    'plugins/file-saver/file-saver.min',
-    'lib/Canvas-To-Blob',
-    'helpers/object-assign',
-], function(
-    $,
-    websocket,
-    printSlicing,
-    fcodeReader,
-    AlertActions,
-    ProgressActions,
-    PrintGlobalInteraction,
-    ProgressStore,
-    GlobalConstants,
-    DeviceConstants,
-    ProgressConstants,
-    ErrorConstants,
-    Packer,
-    i18n,
-    Config,
-    GlobalActions,
-    Sprintf,
-    packer,
-    Rx,
-    Settings,
-    localStorage,
-    SocketMaster
-) {
+'use strict';
+
+define(['jquery', 'helpers/websocket', 'helpers/api/3d-print-slicing', 'helpers/api/fcode-reader', 'app/actions/alert-actions', 'app/actions/progress-actions', 'app/actions/delta/print-global-interactions', 'app/stores/progress-store', 'app/constants/global-constants', 'app/constants/device-constants', 'app/constants/progress-constants', 'app/constants/error-constants', 'helpers/packer', 'helpers/i18n', 'helpers/api/config', 'app/actions/global-actions', 'helpers/sprintf', 'helpers/packer', 'Rx', 'app/app-settings', 'helpers/local-storage', 'helpers/socket-master',
+// non-return value
+'threeOrbitControls', 'threeTrackballControls', 'threeTransformControls', 'threeSTLLoader', 'threeOBJLoader', 'threeCircularGridHelper', 'plugins/file-saver/file-saver.min', 'lib/Canvas-To-Blob', 'helpers/object-assign'], function ($, websocket, printSlicing, fcodeReader, AlertActions, ProgressActions, PrintGlobalInteraction, ProgressStore, GlobalConstants, DeviceConstants, ProgressConstants, ErrorConstants, Packer, i18n, Config, GlobalActions, Sprintf, packer, Rx, Settings, localStorage, SocketMaster) {
     'use strict';
 
-    let THREE = window.THREE || {},
-        container, slicer, fcodeConsole;
+    var THREE = window.THREE || {},
+        container = void 0,
+        slicer = void 0,
+        fcodeConsole = void 0;
 
-    let camera, scene, outlineScene;
-    let orbitControl, transformControl, reactSrc;
+    var camera = void 0,
+        scene = void 0,
+        outlineScene = void 0;
+    var orbitControl = void 0,
+        transformControl = void 0,
+        reactSrc = void 0;
 
-    let objects = [],
+    var objects = [],
         referenceMeshes = [],
-        fullSliceParameters = {settings: {}},
+        fullSliceParameters = { settings: {} },
         lastSliceParams = '',
         enableAntiAlias = localStorage.get('antialiasing') === '1';
 
-    let raycaster = new THREE.Raycaster(),
+    var raycaster = new THREE.Raycaster(),
         mouse = new THREE.Vector2(),
         renderer = new THREE.WebGLRenderer({ antialias: enableAntiAlias });
 
-    let circularGridHelper, mouseDown, SELECTED;
+    var circularGridHelper = void 0,
+        mouseDown = void 0,
+        SELECTED = void 0;
 
-    let movingOffsetX, movingOffsetY, panningOffset, originalCameraPosition, originalCameraRotation,
-        scaleBeforeTransformX, scaleBeforeTransformY, scaleBeforeTransformZ;
+    var movingOffsetX = void 0,
+        movingOffsetY = void 0,
+        panningOffset = void 0,
+        originalCameraPosition = void 0,
+        originalCameraRotation = void 0,
+        scaleBeforeTransformX = void 0,
+        scaleBeforeTransformY = void 0,
+        scaleBeforeTransformZ = void 0;
 
-    let _id = 'PRINT.JS',
-        responseBlob, printPath,
-        previewScene,
+    var _id = 'PRINT.JS',
+        responseBlob = void 0,
+        printPath = void 0,
+        previewScene = void 0,
         previewColors = [],
         previewUrl = '',
         blobExpired = false,
@@ -95,25 +58,25 @@ define([
         hasPreviewImage = false,
         ddHelper = 0,
         defaultFileName = '',
-        cameraLight,
-        slicingTimmer,
+        cameraLight = void 0,
+        slicingTimmer = void 0,
         slicingWaitTime = 3000,
-        stlTimmer,
-        changeRenderThrottle,
+        stlTimmer = void 0,
+        changeRenderThrottle = void 0,
         transformAxisChanged = '',
         slicingReport = {},
         slicingStatus = {},
         importedFCode = {},
         importedScene = {},
         objectBeforeTransform = {},
-        slicingStatusStream,
-        sliceMaster,
-        uploadProgress,
+        slicingStatusStream = void 0,
+        sliceMaster = void 0,
+        uploadProgress = void 0,
         fineSettings = {},
         history = [],
         lang = i18n.get();
 
-    let s = {
+    var s = {
         diameter: 170,
         radius: 85,
         height: 180,
@@ -128,22 +91,22 @@ define([
         colorSelected: Settings.print_config.color_border_selected,
         objectColor: Settings.print_config.color_object,
         degreeStep: 5,
-        scalePrecision: 1,  // decimal places,
-        allowedMin: 1       // (mm)
+        scalePrecision: 1, // decimal places,
+        allowedMin: 1 // (mm)
     };
 
-    let commonMaterial = new THREE.MeshPhongMaterial({
+    var commonMaterial = new THREE.MeshPhongMaterial({
         color: s.objectColor,
         specular: Settings.print_config.color_object,
         shininess: 1
     });
 
-    let slicingType = {
+    var slicingType = {
         F: 'f',
         G: 'g'
     };
 
-    let models = [];
+    var models = [];
 
     previewColors[0] = new THREE.Color(Settings.print_config.color_default);
     previewColors[1] = new THREE.Color(Settings.print_config.color_infill);
@@ -156,8 +119,7 @@ define([
     previewColors[8] = new THREE.Color(Settings.print_config.color_skin);
     previewColors[9] = new THREE.Color(Settings.print_config.color_highlight);
 
-
-    let emphasizeLineMaterial = new THREE.LineBasicMaterial({
+    var emphasizeLineMaterial = new THREE.LineBasicMaterial({
         color: 0xffffff,
         linewidth: 5,
         vertexColors: THREE.VertexColors
@@ -169,15 +131,16 @@ define([
         printControl.reactSrc = src;
         PrintGlobalInteraction.attach(printControl);
 
-        let width = container.offsetWidth, height = container.offsetHeight;
+        var width = container.offsetWidth,
+            height = container.offsetHeight;
 
         if (Config().read('camera-projection') === 'Orthographic') {
-            camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
+            camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 1, 1000);
             camera.position.set(0, -200, 100);
             camera.zoom = 4;
             camera.updateProjectionMatrix();
         } else {
-            camera = new THREE.PerspectiveCamera(60, width/height, 1, 30000);
+            camera = new THREE.PerspectiveCamera(60, width / height, 1, 30000);
             camera.position.set(0, -200, 100);
         }
         camera.up = new THREE.Vector3(0, 0, 1);
@@ -186,25 +149,16 @@ define([
         outlineScene = new THREE.Scene();
 
         // circular grid helper
-        circularGridHelper = new CircularGridHelper(
-            s.diameter,
-            s.step,
-            s.upVector,
-            s.color,
-            s.opacity,
-            s.text,
-            s.textColor,
-            s.textPosition
-        );
+        circularGridHelper = new CircularGridHelper(s.diameter, s.step, s.upVector, s.color, s.opacity, s.text, s.textColor, s.textPosition);
         circularGridHelper.name = 'circularGridHelper';
         scene.add(circularGridHelper);
         previewScene = scene.clone();
 
-        let geometry = new THREE.PlaneBufferGeometry( 250, 250, 0, 0 ),
+        var geometry = new THREE.PlaneBufferGeometry(250, 250, 0, 0),
             material = new THREE.MeshBasicMaterial({
-                color: 0xE2E1E0,
-                wireframe: true
-            }),
+            color: 0xE2E1E0,
+            wireframe: true
+        }),
             refMesh = new THREE.Mesh(geometry, material);
 
         material.depthWrite = false;
@@ -223,8 +177,8 @@ define([
         _addShadowedLight(-1, -1, -1, 0xffffff, 1.35);
         _addShadowedLight(-0.5, -1, 1, 0xffffff, 1);
 
-        cameraLight = new THREE.PointLight( 0xFFFFFF, 0.8, 300 );
-        cameraLight.position.set(0,0,0);
+        cameraLight = new THREE.PointLight(0xFFFFFF, 0.8, 300);
+        cameraLight.position.set(0, 0, 0);
         scene.cameraLight = cameraLight;
         scene.add(cameraLight);
 
@@ -271,7 +225,7 @@ define([
         slicingStatus.inProgress = false;
         slicingStatusStream.onNext(slicingStatus);
 
-        if(!sliceMaster) {
+        if (!sliceMaster) {
             sliceMaster = new SocketMaster();
             sliceMaster.setWebSocket(printSlicing());
         }
@@ -285,37 +239,32 @@ define([
 
     function uploadStl(name, file, ext) {
         // pass to slicer
-        let d = $.Deferred();
-        let uploadCaller = file.path ?
-            sliceMaster.addTask('upload_via_path', name, file, ext, file.path)
-            :
-            sliceMaster.addTask('upload', name, file, ext);
+        var d = $.Deferred();
+        var uploadCaller = file.path ? sliceMaster.addTask('upload_via_path', name, file, ext, file.path) : sliceMaster.addTask('upload', name, file, ext);
 
-        uploadCaller.then((result) => {
+        uploadCaller.then(function (result) {
             ProgressActions.updating(lang.print.finishingUp, 100);
             d.resolve(result);
-        }).progress(
-            displayProgress
-        ).fail((error) => {
+        }).progress(displayProgress).fail(function (error) {
             d.reject(error);
         });
         return d.promise();
     }
 
     function appendModel(binary, file, ext, callback) {
-        if(binary.byteLength === 0) {
+        if (binary.byteLength === 0) {
             ProgressActions.close();
             AlertActions.showPopupError('', lang.message.empty_file);
             return;
         }
-        let stlLoader = new THREE.STLLoader(),
+        var stlLoader = new THREE.STLLoader(),
             objLoader = new THREE.OBJLoader();
 
-        callback = callback || function() {};
+        callback = callback || function () {};
 
-        let loadGeometry = (geometry) => {
-            if(geometry.vertices) {
-                if(geometry.vertices.length === 0) {
+        var loadGeometry = function loadGeometry(geometry) {
+            if (geometry.vertices) {
+                if (geometry.vertices.length === 0) {
                     ProgressActions.close();
                     reactSrc.setState({
                         openImportWindow: true,
@@ -325,36 +274,36 @@ define([
                     return;
                 }
             }
-            let mesh = new THREE.Mesh(geometry, commonMaterial);
+            var mesh = new THREE.Mesh(geometry, commonMaterial);
             mesh.up = new THREE.Vector3(0, 0, 1);
 
-            setTimeout(() => {
+            setTimeout(function () {
                 console.log('New Mesh:: Py Processing meshes');
                 ProgressActions.updating('Processing meshes', 50);
             }, 1);
 
-            uploadStl(mesh.uuid, file, ext).then(() => {
+            uploadStl(mesh.uuid, file, ext).then(function () {
                 addToScene();
                 PrintGlobalInteraction.onSceneImport();
                 callback();
-            }).progress((steps, total) => {
+            }).progress(function (steps, total) {
                 console.log(steps, total);
-            }).fail((error) => {
+            }).fail(function (error) {
                 reactSrc.setState({
                     openImportWindow: true,
                     openObjectDialogue: false
-                }, () => {
+                }, function () {
                     ProgressActions.close();
                 });
                 processSlicerError(error);
                 return;
             });
 
-            const addToScene = () => {
+            var addToScene = function addToScene() {
                 geometry.center();
 
                 // normalize - resize, align
-                let box = new THREE.Box3().setFromObject(mesh),
+                var box = new THREE.Box3().setFromObject(mesh),
                     enlarge = parseInt(box.getSize().x) !== 0 && parseInt(box.getSize().y) !== 0 && parseInt(box.getSize().z) !== 0,
                     scale = 1;
 
@@ -380,21 +329,21 @@ define([
                 mesh.name = 'custom';
                 mesh.file = file;
                 mesh.fileName = file.name;
-                setTimeout(() => {
+                setTimeout(function () {
                     console.log('New Mesh:: Calculating boundary');
                     ProgressActions.updating('Calculating boundary', 50);
                 }, 1);
 
                 mesh.plane_boundary = planeBoundary(mesh);
 
-                setTimeout(() => {
+                setTimeout(function () {
                     ProgressActions.updating('Arranging position', 80);
                 }, 1);
 
                 autoArrange(mesh);
                 addSizeProperty(mesh);
 
-                setTimeout(() => {
+                setTimeout(function () {
                     console.log('New Mesh:: Grounding');
                     ProgressActions.updating('Grouding', 85);
                 }, 1);
@@ -402,13 +351,13 @@ define([
                 groundIt(mesh);
                 selectObject(mesh);
 
-                setTimeout(() => {
+                setTimeout(function () {
                     ProgressActions.updating('Creating outline', 90);
                 }, 1);
 
                 createOutline(mesh);
 
-                setTimeout(() => {
+                setTimeout(function () {
                     ProgressActions.updating('Adding to scene', 95);
                 }, 1);
 
@@ -421,7 +370,7 @@ define([
                 addHistory('ADD', mesh);
 
                 setDefaultFileName();
-                setTimeout(() => {
+                setTimeout(function () {
                     ProgressActions.close();
                 }, 1);
 
@@ -433,19 +382,20 @@ define([
             openImportWindow: false
         });
 
-        if(ext === 'obj') {
-            objLoader.load(binary, (object) => {
-                let meshes = object.children.filter(c => c instanceof THREE.Mesh);
-                if(meshes.length > 0) {
+        if (ext === 'obj') {
+            objLoader.load(binary, function (object) {
+                var meshes = object.children.filter(function (c) {
+                    return c instanceof THREE.Mesh;
+                });
+                if (meshes.length > 0) {
                     loadGeometry(new THREE.Geometry().fromBufferGeometry(meshes[0].geometry));
                 }
                 // loadGeometry(new THREE.Geometry().fromBufferGeometry(.geometry))
             });
-        }
-        else {
-            stlLoader.load(binary, (geometry) => {
+        } else {
+            stlLoader.load(binary, function (geometry) {
                 loadGeometry(geometry);
-            }, function() { }, (error) => {
+            }, function () {}, function (error) {
                 throw error;
                 // on error
                 // loadGeometry({vertices: []});
@@ -454,24 +404,19 @@ define([
     }
 
     function appendModels(files, index, callback) {
-        ProgressActions.open(
-            ProgressConstants.STEPPING,
-            lang.print.importingModel,
-            lang.print.wait,
-            !showStopButton
-        );
+        ProgressActions.open(ProgressConstants.STEPPING, lang.print.importingModel, lang.print.wait, !showStopButton);
 
-        let file = files.item ? files.item(index) : files[index];
-        let ext = file.name.split('.').pop().toLowerCase();
+        var file = files.item ? files.item(index) : files[index];
+        var ext = file.name.split('.').pop().toLowerCase();
 
         models.push(file);
-        if(ext === 'stl' || ext === 'obj') {
-            let fr = new FileReader();
-            fr.addEventListener('load', (e) => {
+        if (ext === 'stl' || ext === 'obj') {
+            var fr = new FileReader();
+            fr.addEventListener('load', function (e) {
                 ProgressActions.updating('Loading as ' + ext, 10);
-                appendModel(fr.result, file, ext, function(err) {
-                    if(!err) {
-                        if(files.length > index + 1) {
+                appendModel(fr.result, file, ext, function (err) {
+                    if (!err) {
+                        if (files.length > index + 1) {
                             appendModels(files, index + 1, callback);
                         } else {
                             if (localStorage.get('auto-slicing') !== 'false') {
@@ -484,69 +429,59 @@ define([
             });
             ProgressActions.updating('Start Loading', 5);
 
-            let method = ext === 'obj' ? 'readAsDataURL' : 'readAsArrayBuffer';
+            var method = ext === 'obj' ? 'readAsDataURL' : 'readAsArrayBuffer';
             fr[method](file);
-        }
-        else if (ext === 'fc' || ext === 'gcode') {
+        } else if (ext === 'fc' || ext === 'gcode') {
             slicingStatus.isComplete = true;
             importedFCode = files.item(0);
             importFromFCode = ext === 'fc';
             setDefaultFileName(importedFCode.name);
-            if(objects.length === 0) {
+            if (objects.length === 0) {
                 doFCodeImport(ext);
             } else {
                 ProgressActions.close();
-                AlertActions.showPopupYesNo(
-                    GlobalConstants.IMPORT_FCODE,
-                    lang.message.confirmFCodeImport, '', ext);
+                AlertActions.showPopupYesNo(GlobalConstants.IMPORT_FCODE, lang.message.confirmFCodeImport, '', ext);
             }
             callback();
-        }
-        else if (ext === 'fsc') {
+        } else if (ext === 'fsc') {
             importedScene = files.item(0);
             setDefaultFileName(importedScene.name);
-            if(objects.length === 0) {
+            if (objects.length === 0) {
                 _handleLoadScene(importedScene);
-            }
-            else {
+            } else {
                 ProgressActions.close();
-                AlertActions.showPopupYesNo(
-                    GlobalConstants.IMPORT_SCENE,
-                    lang.message.confirmSceneImport
-                );
+                AlertActions.showPopupYesNo(GlobalConstants.IMPORT_SCENE, lang.message.confirmSceneImport);
             }
             callback();
-        }
-        else {
+        } else {
             ProgressActions.close();
             AlertActions.showPopupError('', lang.monitor.extensionNotSupported);
             callback();
         }
-
     }
 
     function appendPreviewPath(file, callback, isGcode) {
-        let metadata,
+        var metadata = void 0,
             reader = new FileReader();
 
-        reader.addEventListener('load', function() {
-            fcodeConsole.upload(reader.result, isGcode).then(() => {
-                fcodeConsole.getMetadata().then((data) => {
+        reader.addEventListener('load', function () {
+            fcodeConsole.upload(reader.result, isGcode).then(function () {
+                fcodeConsole.getMetadata().then(function (data) {
                     processMetadata(data);
                 });
-            }).fail((response) => {
+            }).fail(function (response) {
                 // out of bound, can still preview
-                if(response.error === ErrorConstants.GCODE_AREA_TOO_BIG) {
+                if (response.error === ErrorConstants.GCODE_AREA_TOO_BIG) {
                     // disable go button
                     reactSrc.setState({ hasObject: false });
-                    if(previewMode) {
-                        fcodeConsole.getPath().then((r) => {
-                            if(r.error) {
+                    if (previewMode) {
+                        fcodeConsole.getPath().then(function (r) {
+                            if (r.error) {
                                 processSlicerError(r);
                             }
                             printPath = r;
                             processPath(r);
-                            _drawPath().then(function() {
+                            _drawPath().then(function () {
                                 _resetPreviewLayerSlider();
                                 ProgressActions.close();
                                 slicingStatus.showProgress = false;
@@ -556,8 +491,7 @@ define([
 
                     // notify gcode too big, only previewing
                     AlertActions.showPopupError('', lang.message.gcode_area_too_big);
-                }
-                else {
+                } else {
                     _closeWait();
                     AlertActions.showPopupError('fcode-error', lang.slicer.error[response.error] || response.info);
                     cancelPreview();
@@ -565,20 +499,19 @@ define([
             });
         });
 
-        let processMetadata = function(m) {
+        var processMetadata = function processMetadata(m) {
             metadata = m;
-            let fcodeType = m.metadata.HEAD_TYPE;
-            if(fcodeType === 'EXTRUDER') {
-                fcodeConsole.getPath().then((result) => {
-                    if(result.error) {
+            var fcodeType = m.metadata.HEAD_TYPE;
+            if (fcodeType === 'EXTRUDER') {
+                fcodeConsole.getPath().then(function (result) {
+                    if (result.error) {
                         processSlicerError(result);
                         return;
                     }
                     processPath(result);
                 });
-            }
-            else {
-                let message = fcodeType === 'LASER' ? lang.message.fcodeForLaser : lang.message.fcodeForPen;
+            } else {
+                var message = fcodeType === 'LASER' ? lang.message.fcodeForLaser : lang.message.fcodeForPen;
                 ProgressActions.close();
                 importFromFCode = false;
                 importFromGCode = false;
@@ -588,21 +521,21 @@ define([
             }
         };
 
-        let processPath = function(path) {
+        var processPath = function processPath(path) {
             previewMode = true;
             printPath = path;
             _drawPathFromFCode();
             _resetPreviewLayerSlider();
 
             // update the preview image
-            getBlobFromScene().then((blob) => {
-                if(blob instanceof Blob) {
+            getBlobFromScene().then(function (blob) {
+                if (blob instanceof Blob) {
                     previewUrl = URL.createObjectURL(blob);
-                    fcodeConsole.changeImage(blob).then(() => {
+                    fcodeConsole.changeImage(blob).then(function () {
                         blobExpired = false;
                         responseBlob = new Blob([reader.result]);
                         GlobalActions.sliceComplete(metadata);
-                    }).fail((error) => {
+                    }).fail(function (error) {
                         // TODO: log error
                     });
                 }
@@ -613,43 +546,49 @@ define([
     }
 
     function startSlicing(type) {
-        slicingStatus.inProgress    = true;
-        slicingStatus.hasError      = false;
-        slicingStatus.isComplete    = false;
-        blobExpired                 = true;
-        willReslice                 = false;
+        slicingStatus.inProgress = true;
+        slicingStatus.hasError = false;
+        slicingStatus.isComplete = false;
+        blobExpired = true;
+        willReslice = false;
 
         // disable go buttons, only enable when slice complete
         reactSrc.setState({ disableGoButtons: true });
 
         slicingStatusStream.onNext(slicingStatus);
 
-        if(objects.length === 0 || !blobExpired) { return; }
+        if (objects.length === 0 || !blobExpired) {
+            return;
+        }
 
-        let ids = objects.filter(v => !v.position.isOutOfBounds).map(v => v.uuid);
+        var ids = objects.filter(function (v) {
+            return !v.position.isOutOfBounds;
+        }).map(function (v) {
+            return v.uuid;
+        });
 
-        if(previewMode) {
+        if (previewMode) {
             _clearPath();
             _showPreview();
         }
 
-        syncObjectParameter().then(() => {
+        syncObjectParameter().then(function () {
             return stopSlicing();
-        }).then(() => {
+        }).then(function () {
             // set again because stop slicing set inProgress to false
             slicingStatus.inProgress = true;
             slicingStatusStream.onNext(slicingStatus);
 
-            sliceMaster.addTask('beginSlicing', ids, slicingType.F).then(() => {
+            sliceMaster.addTask('beginSlicing', ids, slicingType.F).then(function () {
                 slicingStatus.percentage = 0.05;
-                reactSrc.setState({slicingPercentage: 0.05});
-                getSlicingReport(function(report) {
+                reactSrc.setState({ slicingPercentage: 0.05 });
+                getSlicingReport(function (report) {
                     if (report.status !== 'ok') {
                         slicingStatus.lastReport = report;
                     }
                     updateSlicingProgressFromReport(slicingStatus.lastReport);
                 });
-            }).fail((error) => {
+            }).fail(function (error) {
                 processSlicerError(error);
                 return;
             });
@@ -657,42 +596,42 @@ define([
     }
 
     function takeSnapShot() {
-        let d = $.Deferred(),
+        var d = $.Deferred(),
             wasInPreviewMode = false;
 
         checkAndReslice(true);
         _checkNeedToShowProgress();
-        if(importFromGCode || importFromFCode) {
+        if (importFromGCode || importFromFCode) {
             d.resolve();
             return d.promise();
         }
 
-        if(previewMode) {
+        if (previewMode) {
             togglePreview();
             wasInPreviewMode = true;
         }
 
-        getBlobFromScene().then((blob) => {
-            if(wasInPreviewMode) {
+        getBlobFromScene().then(function (blob) {
+            if (wasInPreviewMode) {
                 togglePreview();
             }
             previewUrl = URL.createObjectURL(blob);
 
-            let t = setInterval(() => {
-                if(slicingStatus.isComplete) {
+            var t = setInterval(function () {
+                if (slicingStatus.isComplete) {
                     slicingStatus.showProgress = false;
                     clearInterval(t);
-                    if(slicingStatus.hasError) {
+                    if (slicingStatus.hasError) {
                         return;
                     }
-                    sliceMaster.addTask('uploadPreviewImage', blob).then(() => {
-                        sliceMaster.addTask('getSlicingResult').then((result) => {
+                    sliceMaster.addTask('uploadPreviewImage', blob).then(function () {
+                        sliceMaster.addTask('getSlicingResult').then(function (result) {
                             responseBlob = result;
                             d.resolve(blob);
-                        }).fail((error) => {
+                        }).fail(function (error) {
                             processSlicerError(error);
                         });
-                    }).fail((error) => {
+                    }).fail(function (error) {
                         processSlicerError(error);
                     });
                 }
@@ -701,29 +640,21 @@ define([
         return d.promise();
     }
 
-    function checkAndReslice(sliceForSnapshot = false) {
+    function checkAndReslice() {
+        var sliceForSnapshot = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
         if (localStorage.get('auto-slicing') === 'false' && !sliceForSnapshot) return;
         if (importFromFCode || importFromGCode) return;
         // Check if slicing is necessary
         fullSliceParameters.objs = {};
-        objects.forEach((o) => {
-            fullSliceParameters.objs[o.uuid] = [
-                o.position.x,
-                o.position.y,
-                o.position.z,
-                o.rotation.x,
-                o.rotation.y,
-                o.rotation.z,
-                o.scale.x,
-                o.scale.y,
-                o.scale.z
-            ];
+        objects.forEach(function (o) {
+            fullSliceParameters.objs[o.uuid] = [o.position.x, o.position.y, o.position.z, o.rotation.x, o.rotation.y, o.rotation.z, o.scale.x, o.scale.y, o.scale.z];
         });
 
-        let sliceParams = JSON.stringify(fullSliceParameters, (key, val) => {
+        var sliceParams = JSON.stringify(fullSliceParameters, function (key, val) {
             // Fix precision to .00001
             if (val === undefined) {
-                console.warn("Empty Parameter:" , key);
+                console.warn("Empty Parameter:", key);
                 return val;
             }
             return val.toFixed ? Number(val.toFixed(5)) : val;
@@ -743,19 +674,20 @@ define([
         willReslice = true;
 
         clearTimeout(slicingTimmer);
-        slicingTimmer = setTimeout(() => {
-            if(slicingStatus.inProgress) {
+        slicingTimmer = setTimeout(function () {
+            if (slicingStatus.inProgress) {
                 stopSlicing();
                 startSlicing(slicingType.F);
-            }
-            else {
+            } else {
                 startSlicing(slicingType.F);
             }
         }, 100);
     }
 
     function updateSlicingProgressFromReport(report) {
-        if(!report) { return; }
+        if (!report) {
+            return;
+        }
         slicingStatus.inProgress = true;
         slicingStatus.error = null;
         slicingStatusStream.onNext(slicingStatus);
@@ -765,7 +697,7 @@ define([
             slicingStatus.needToCloseWait = false;
         }
 
-        let progress = `${lang.slicer[report.slice_status]} - ${'\n' + parseInt(report.percentage * 100)}% - ${report.message}`,
+        var progress = lang.slicer[report.slice_status] + ' - ' + ('\n' + parseInt(report.percentage * 100)) + '% - ' + report.message,
             complete = lang.print.finishingUp,
             show = slicingStatus.showProgress,
             monitorOn = $('.flux-monitor').length > 0;
@@ -780,48 +712,42 @@ define([
             });
         }
         if (report.percentage !== slicingStatus.percentage) {
-            if(report.percentage > 1) {
+            if (report.percentage > 1) {
                 report.percentage = report.percentage * 0.6;
             }
             slicingStatus.percentage = report.percentage;
-            reactSrc.setState({slicingPercentage: slicingStatus.percentage});
+            reactSrc.setState({ slicingPercentage: slicingStatus.percentage });
         }
         console.log(report);
         slicingStatus.lastProgress = progress;
 
-        if(monitorOn) {
+        if (monitorOn) {
             GlobalActions.closeMonitor();
             needToShowMonitor = true;
         }
 
-        if(show) {
-            ProgressActions.open(
-                ProgressConstants.STEPPING,
-                lang.print.rendering,
-                lang.print.savingFilePreview,
-                showStopButton
-            );
+        if (show) {
+            ProgressActions.open(ProgressConstants.STEPPING, lang.print.rendering, lang.print.savingFilePreview, showStopButton);
         }
 
-        if(report.slice_status === 'error') {
+        if (report.slice_status === 'error') {
             clearInterval(slicingStatus.reporter);
 
             slicingStatus.lastReport.info = lang.slicer.error[report.error] || report.info;
             slicingStatus.lastReport.caption = lang.alert.error;
             slicingStatus.hasError = true;
 
-            if(report.error === '6') {
+            if (report.error === '6') {
                 slicingStatus.error = report;
-                if(previewMode) {
-                    sliceMaster.addTask('getPath').then((result) => {
-                        if(result.error) {
+                if (previewMode) {
+                    sliceMaster.addTask('getPath').then(function (result) {
+                        if (result.error) {
                             processSlicerError(result);
                         }
                         printPath = result;
-                        _drawPath().then(function() {
+                        _drawPath().then(function () {
                             _resetPreviewLayerSlider();
                             slicingStatus.showProgress = false;
-
                         });
                     });
                 }
@@ -831,13 +757,12 @@ define([
 
                 slicingStatus.isComplete = true;
                 blobExpired = false;
-            }
-            else {
-                if(show || previewMode) {
-                    setTimeout(() => {
+            } else {
+                if (show || previewMode) {
+                    setTimeout(function () {
                         ProgressActions.close();
                     }, 0);
-                    if(previewMode) {
+                    if (previewMode) {
                         _closePreview();
                         togglePreview();
                     }
@@ -847,30 +772,31 @@ define([
             }
 
             reactSrc.setState({ hasOutOfBoundsObject: true, slicingPercentage: 0 });
-        }
-        else if(report.slice_status === 'warning') {
+        } else if (report.slice_status === 'warning') {
             AlertActions.showWarning(report.message);
-        }
-        else if(report.slice_status !== 'complete') {
+        } else if (report.slice_status !== 'complete') {
             slicingStatus.isComplete = false;
-            if(show) {
-                if(willReslice) {
+            if (show) {
+                if (willReslice) {
                     ProgressActions.updating(lang.print.reRendering, 0);
                 }
-                if(report.percentage) {
-                    setTimeout(() => {
+                if (report.percentage) {
+                    setTimeout(function () {
                         ProgressActions.updating(progress, parseInt(report.percentage * 100));
                     }, 0);
                 }
             }
-        }
-        else if(report.slice_status === 'complete') {
+        } else if (report.slice_status === 'complete') {
             GlobalActions.sliceComplete(report);
-            if(show) { ProgressActions.updating(complete, 100); }
-            sliceMaster.addTask('getSlicingResult').then((result) => {
-                if(result.error) { return processSlicerError(result); }
-                setTimeout(function() {
-                    if(needToShowMonitor) {
+            if (show) {
+                ProgressActions.updating(complete, 100);
+            }
+            sliceMaster.addTask('getSlicingResult').then(function (result) {
+                if (result.error) {
+                    return processSlicerError(result);
+                }
+                setTimeout(function () {
+                    if (needToShowMonitor) {
                         reactSrc._handleDeviceSelected();
                         needToShowMonitor = false;
                     }
@@ -879,7 +805,7 @@ define([
                 blobExpired = false;
                 responseBlob = result;
                 _handleSliceComplete();
-            }).fail((error) => {
+            }).fail(function (error) {
                 console.log('Slicining Error:: ', error);
             });
         }
@@ -893,8 +819,8 @@ define([
     }
 
     function registerDragToImport() {
-        if(window.FileReader) {
-            let zone = document.querySelector('.studio-container.print-studio');
+        if (window.FileReader) {
+            var zone = document.querySelector('.studio-container.print-studio');
             zone.addEventListener('dragenter', onDragEnter);
             zone.addEventListener('dragover', onDragEnter);
             zone.addEventListener('dragleave', onDragLeave);
@@ -903,7 +829,7 @@ define([
     }
 
     function unregisterDragToImport() {
-        let zone = document.querySelector('.studio-container.print-studio');
+        var zone = document.querySelector('.studio-container.print-studio');
         zone.removeEventListener('dragenter', onDragEnter);
         zone.removeEventListener('dragover', onDragEnter);
         zone.removeEventListener('dragleave', onDragLeave);
@@ -913,10 +839,12 @@ define([
     function onDropFile(e) {
         e.preventDefault();
         $('.import-indicator').hide();
-        if(previewMode) { return; }
-        let files = e.dataTransfer.files;
-        if(files.length > 0) {
-            appendModels(files, 0, function() {
+        if (previewMode) {
+            return;
+        }
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            appendModels(files, 0, function () {
                 e.target.value = null;
             });
         }
@@ -924,8 +852,10 @@ define([
 
     function onDragEnter(e) {
         e.preventDefault();
-        if(previewMode) { return; }
-        if(e.type === 'dragenter') {
+        if (previewMode) {
+            return;
+        }
+        if (e.type === 'dragenter') {
             ddHelper++;
         }
         $('.import-indicator').show();
@@ -935,10 +865,12 @@ define([
 
     function onDragLeave(e) {
         e.preventDefault();
-        if(previewMode) { return; }
+        if (previewMode) {
+            return;
+        }
         ddHelper--;
 
-        if(ddHelper === 0) {
+        if (ddHelper === 0) {
             $('.import-indicator').hide();
         }
 
@@ -948,14 +880,16 @@ define([
     // Events Section ---
 
     function onDblClick(e) {
-      if (!$.isEmptyObject(SELECTED)) {
-        _targetAndZoom(SELECTED);
-      }
+        if (!$.isEmptyObject(SELECTED)) {
+            _targetAndZoom(SELECTED);
+        }
     }
 
     function onMouseDown(e) {
         e.preventDefault();
-        if(previewMode) { return; }
+        if (previewMode) {
+            return;
+        }
         setMousePosition(e);
         mouseDown = true;
 
@@ -969,12 +903,12 @@ define([
         });
 
         raycaster.setFromCamera(mouse, camera);
-        let intersects = raycaster.intersectObjects(objects);
+        var intersects = raycaster.intersectObjects(objects);
 
         if (intersects.length > 0) {
 
-            let target = intersects[0].object;
-            let location = getReferenceIntersectLocation(e);
+            var target = intersects[0].object;
+            var location = getReferenceIntersectLocation(e);
             selectObject(target);
 
             orbitControl.enabled = false;
@@ -983,10 +917,7 @@ define([
 
             movingOffsetX = location ? location.x - target.position.x : target.position.x;
             movingOffsetY = location ? location.y - target.position.y : target.position.y;
-
-        }
-
-        else {
+        } else {
 
             if (!transformMode) {
                 selectObject(null);
@@ -995,7 +926,7 @@ define([
                 transformMode = false;
                 render();
             } else {
-                if(SELECTED) {
+                if (SELECTED) {
                     scaleBeforeTransformX = SELECTED.scale.x;
                     scaleBeforeTransformY = SELECTED.scale.y;
                     scaleBeforeTransformZ = SELECTED.scale.z;
@@ -1003,23 +934,23 @@ define([
             }
         }
 
-        if(SELECTED.uuid) { addHistory(); }
+        if (SELECTED.uuid) {
+            addHistory();
+        }
     }
 
     function toggleTransformControl(hide) {
-        if(!$.isEmptyObject(SELECTED)) {
-            if(hide) {
+        if (!$.isEmptyObject(SELECTED)) {
+            if (hide) {
                 removeFromScene('TransformControl');
                 SELECTED.outlineMesh.visible = false;
                 render();
-            }
-            else {
+            } else {
                 transformControl.attach(SELECTED);
                 SELECTED.outlineMesh.visible = true;
-                if(reactSrc.state.mode === 'rotate') {
+                if (reactSrc.state.mode === 'rotate') {
                     setRotateMode();
-                }
-                else {
+                } else {
                     setScaleMode();
                 }
             }
@@ -1028,12 +959,12 @@ define([
 
     function onMouseUp(e) {
         e.preventDefault();
-        let o = {
+        var o = {
             isTransforming: false,
             updateCamera: false
         };
 
-        if(reactSrc.state.disablePreview) {
+        if (reactSrc.state.disablePreview) {
             o = Object.assign(o, { disablePreview: false });
         }
 
@@ -1044,9 +975,9 @@ define([
         container.style.cursor = 'auto';
         transformAxisChanged = '';
 
-        checkOutOfBounds(SELECTED).then(() => {
+        checkOutOfBounds(SELECTED).then(function () {
             // disable preview when object are all out of bound
-            reactSrc.setState({ hasObject: !allOutOfBound()});
+            reactSrc.setState({ hasObject: !allOutOfBound() });
 
             if (!allOutOfBound()) {
                 //set the OrbitControls target to move around.
@@ -1054,7 +985,7 @@ define([
                     _orbitTargetMesh(SELECTED);
                 }
             }
-            if(blobExpired && objects.length > 0 && !allOutOfBound()) {
+            if (blobExpired && objects.length > 0 && !allOutOfBound()) {
                 slicingStatus.showProgress = false;
 
                 setObjectDialoguePosition(SELECTED);
@@ -1071,7 +1002,7 @@ define([
         // if SELECTED and mouse down
         if (Object.keys(SELECTED).length > 0 && mouseDown) {
             if (!transformMode) {
-                let location = getReferenceIntersectLocation(e);
+                var location = getReferenceIntersectLocation(e);
                 if (SELECTED.position && location) {
                     SELECTED.position.x = location.x - movingOffsetX;
                     SELECTED.position.y = location.y - movingOffsetY;
@@ -1104,13 +1035,15 @@ define([
 
     function onTransformChange() {
         clearTimeout(changeRenderThrottle);
-        changeRenderThrottle = setTimeout(function() {
+        changeRenderThrottle = setTimeout(function () {
             render();
         }, 100);
     }
 
     function onObjectTransform(e) {
-        if(previewMode || typeof SELECTED === 'undefined') { return; }
+        if (previewMode || typeof SELECTED === 'undefined') {
+            return;
+        }
         switch (e.type) {
             case 'mouseDown':
                 objectBeforeTransform = {};
@@ -1120,7 +1053,7 @@ define([
                 objectBeforeTransform.rotation = SELECTED.rotation.clone();
                 transformMode = true;
                 reactSrc.setState({
-                    isTransforming: true,
+                    isTransforming: true
                 });
                 break;
             case 'mouseUp':
@@ -1128,20 +1061,19 @@ define([
                 reactSrc.setState({
                     isTransforming: false
                 });
-                if(reactSrc.state.mode === 'scale') {
+                if (reactSrc.state.mode === 'scale') {
                     // check for inverse transform
-                    if(SELECTED.size.x <= 0 || SELECTED.size.y <= 0 || SELECTED.size.z <= 0) {
+                    if (SELECTED.size.x <= 0 || SELECTED.size.y <= 0 || SELECTED.size.z <= 0) {
                         setSize(objectBeforeTransform.size, false);
                         updateObjectSize(objectBeforeTransform);
-                    }
-                    else {
-                        let s = e.target.object.size;
-                        s.x = _round(s.x);
-                        s.y = _round(s.y);
-                        s.z = _round(s.z);
-                        s.enteredX = _round(s.enteredX);
-                        s.enteredY = _round(s.enteredY);
-                        s.enteredZ = _round(s.enteredZ);
+                    } else {
+                        var _s = e.target.object.size;
+                        _s.x = _round(_s.x);
+                        _s.y = _round(_s.y);
+                        _s.z = _round(_s.z);
+                        _s.enteredX = _round(_s.enteredX);
+                        _s.enteredY = _round(_s.enteredY);
+                        _s.enteredZ = _round(_s.enteredZ);
                         syncObjectOutline(e.target.object);
 
                         reactSrc.setState({
@@ -1152,10 +1084,9 @@ define([
                 groundIt(SELECTED);
                 break;
             case 'objectChange':
-                if(reactSrc.state.mode === 'scale') {
+                if (reactSrc.state.mode === 'scale') {
                     updateObjectSize(e.target.object);
-                }
-                else {
+                } else {
                     updateObjectRotation(e.target.object);
                 }
                 break;
@@ -1167,22 +1098,24 @@ define([
     // get ray intersect with reference mesh
     function getReferenceIntersectLocation(e) {
         e.preventDefault();
-        let onClickPosition = new THREE.Vector2(),
-            array = getMousePosition( container, e.clientX, e.clientY );
+        var onClickPosition = new THREE.Vector2(),
+            array = getMousePosition(container, e.clientX, e.clientY);
 
-		onClickPosition.fromArray( array );
-		let intersects = getIntersects( onClickPosition, scene.children.filter(o => o.name === 'reference') );
-        if(intersects[0]) {
+        onClickPosition.fromArray(array);
+        var intersects = getIntersects(onClickPosition, scene.children.filter(function (o) {
+            return o.name === 'reference';
+        }));
+        if (intersects[0]) {
             return intersects[0].point;
         }
 
-        return { x: 0, y: 0, z: 0};
+        return { x: 0, y: 0, z: 0 };
     }
 
     // calculate the distance from reference mesh
     function getReferenceDistance(mesh) {
         if (mesh) {
-            let ref = {},
+            var ref = {},
                 box = new THREE.Box3().setFromObject(mesh);
 
             ref.x = box.getCenter().x;
@@ -1193,54 +1126,50 @@ define([
     }
 
     function getFCode() {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        if(importFromFCode) {
+        if (importFromFCode) {
             d.resolve(responseBlob, previewUrl);
             return d.promise();
-        }
-        else if(importFromGCode) {
-            fcodeConsole.getFCode().then((blob) => {
+        } else if (importFromGCode) {
+            fcodeConsole.getFCode().then(function (blob) {
                 d.resolve(blob, previewUrl);
             });
             return d.promise();
-        }
-        else if(objects.length === 0) {
+        } else if (objects.length === 0) {
             d.resolve('');
             return d.promise();
         }
 
-        if(!blobExpired) {
+        if (!blobExpired) {
             d.resolve(responseBlob, previewUrl);
             return d.promise();
         }
 
-        let execute = () => {
-            if(slicingStatus.inProgress) {
+        var execute = function execute() {
+            if (slicingStatus.inProgress) {
                 _showWait(lang.print.gettingSlicingReport, !showStopButton);
                 slicingStatus.showProgress = true;
-                let subscriber = slicingStatusStream.subscribe((status) => {
-                    if(status.isComplete) {
+                var subscriber = slicingStatusStream.subscribe(function (status) {
+                    if (status.isComplete) {
                         subscriber.dispose();
                         d.resolve(responseBlob, previewUrl);
                     }
                 });
-            }
-            else {
+            } else {
                 d.resolve(responseBlob, previewUrl);
             }
         };
 
-        if(willReslice) {
-            let t = setInterval(() => {
-                if(slicingStatus.inProgress) {
+        if (willReslice) {
+            var t = setInterval(function () {
+                if (slicingStatus.inProgress) {
                     clearInterval(t);
                     willReslice = false;
                     execute();
                 }
             }, 500);
-        }
-        else {
+        } else {
             execute();
         }
 
@@ -1248,26 +1177,25 @@ define([
     }
 
     function getSlicingReport(callback) {
-        let reportTimmer = 1000; // 1 sec
+        var reportTimmer = 1000; // 1 sec
         clearInterval(slicingStatus.reporter);
-        slicingStatus.reporter = setInterval(function() {
+        slicingStatus.reporter = setInterval(function () {
             if (!slicingStatus.pauseReport) {
-                if(willReslice) {
+                if (willReslice) {
                     return;
                 }
-                sliceMaster.addTask('reportSlicing').then((report) => {
-                    if(!!report) {
-                        if(report.slice_status === 'complete' || report.slice_status === 'error') {
+                sliceMaster.addTask('reportSlicing').then(function (report) {
+                    if (!!report) {
+                        if (report.slice_status === 'complete' || report.slice_status === 'error') {
                             clearInterval(slicingStatus.reporter);
                         }
                         callback(report);
                     }
-                }).fail((error) => {
+                }).fail(function (error) {
                     console.log('Slice report', error);
                 });
             }
         }, reportTimmer);
-
     }
 
     function getModelCount() {
@@ -1277,10 +1205,10 @@ define([
     // SET section ---
 
     function resetObject() {
-        if(SELECTED) {
+        if (SELECTED) {
             console.log('reset???');
-            let s = SELECTED.scale;
-            setScale(s._x, s._y, s._z, true, true);
+            var _s2 = SELECTED.scale;
+            setScale(_s2._x, _s2._y, _s2._z, true, true);
             setRotation(0, 0, 0, true);
             groundIt(SELECTED);
             alignCenter();
@@ -1289,18 +1217,18 @@ define([
     }
 
     function setMousePosition(e) {
-        let offx = 0,
+        var offx = 0,
             offy = 0;
 
-        mouse.x = ((e.offsetX - offx) / container.offsetWidth) * 2 - 1;
+        mouse.x = (e.offsetX - offx) / container.offsetWidth * 2 - 1;
         mouse.y = -((e.offsetY - offy) / container.offsetHeight) * 2 + 1;
     }
 
     function setScale(x, y, z, isLocked, center, src) {
         src = src || SELECTED;
-        let originalScaleX = src.scale._x;
-        let originalScaleY = src.scale._y;
-        let originalScaleZ = src.scale._z;
+        var originalScaleX = src.scale._x;
+        var originalScaleY = src.scale._y;
+        var originalScaleZ = src.scale._z;
         if (x === '' || x <= 0) {
             x = scaleBeforeTransformX;
         }
@@ -1313,12 +1241,8 @@ define([
         src.scale.enteredX = x;
         src.scale.enteredY = y;
         src.scale.enteredZ = z;
-        src.scale.set(
-            (originalScaleX * x) || scaleBeforeTransformX, (originalScaleY * y) || scaleBeforeTransformY, (originalScaleZ * z) || scaleBeforeTransformZ
-        );
-        src.outlineMesh.scale.set(
-            (originalScaleX * x) || scaleBeforeTransformX, (originalScaleY * y) || scaleBeforeTransformY, (originalScaleZ * z) || scaleBeforeTransformZ
-        );
+        src.scale.set(originalScaleX * x || scaleBeforeTransformX, originalScaleY * y || scaleBeforeTransformY, originalScaleZ * z || scaleBeforeTransformZ);
+        src.outlineMesh.scale.set(originalScaleX * x || scaleBeforeTransformX, originalScaleY * y || scaleBeforeTransformY, originalScaleZ * z || scaleBeforeTransformZ);
         src.scale.locked = isLocked;
         src.plane_boundary = planeBoundary(src);
 
@@ -1335,19 +1259,19 @@ define([
     }
 
     function setSize(size, isLocked, src) {
-        let o = { size: {} };
+        var o = { size: {} };
         Object.assign(o.size, size);
 
         src = src || SELECTED;
-        let objectChanged = _objectChanged(src, o);
-        if(objectChanged) {
+        var objectChanged = _objectChanged(src, o);
+        if (objectChanged) {
             isLocked = isLocked || true;
-            let sx = Math.round(size.x / src.size.originalX * 1000) / 1000,
+            var sx = Math.round(size.x / src.size.originalX * 1000) / 1000,
                 sy = Math.round(size.y / src.size.originalY * 1000) / 1000,
                 sz = Math.round(size.z / src.size.originalZ * 1000) / 1000,
                 _center = true;
 
-            if(sx + sy + sz === 0) {
+            if (sx + sy + sz === 0) {
                 return;
             }
 
@@ -1382,19 +1306,19 @@ define([
     }
 
     function setAdvanceParameter(settings) {
-        let deferred = $.Deferred(),
+        var deferred = $.Deferred(),
             updateTask = null;
 
         updateTask = sliceMaster.addTask('setParameter', 'advancedSettingsCura2', settings.configStr);
 
-        updateTask.then(() => {
+        updateTask.then(function () {
             Object.assign(fullSliceParameters.settings, settings);
             slicingStatus.showProgress = false;
-            if(objects.length > 0) {
+            if (objects.length > 0) {
                 checkAndReslice();
             }
             deferred.resolve('');
-        }).fail((error) => {
+        }).fail(function (error) {
             // Fallback to fine settings
             Object.assign(settings, fineSettings);
             processSlicerError(error);
@@ -1407,18 +1331,18 @@ define([
     }
 
     function setParameter(name, value) {
-        let d = $.Deferred();
+        var d = $.Deferred();
         blobExpired = true;
         hasPreviewImage = false;
 
-        sliceMaster.addTask('setParameter', name, value).then(() => {
+        sliceMaster.addTask('setParameter', name, value).then(function () {
             fullSliceParameters.settings[name] = value;
             slicingStatus.showProgress = false;
-            if(objects.length > 0) {
+            if (objects.length > 0) {
                 checkAndReslice();
             }
             d.resolve('');
-        }).fail((error) => {
+        }).fail(function (error) {
             processSlicerError(error);
             d.resolve('');
         });
@@ -1430,7 +1354,7 @@ define([
         blobExpired = true;
         hasPreviewImage = false;
         lastSliceParams = '';
-        if(objects.length > 0) {
+        if (objects.length > 0) {
             checkAndReslice();
         }
         return sliceMaster.addTask('setParameters', keyValueObject);
@@ -1440,7 +1364,7 @@ define([
         src = src || SELECTED;
         syncObjectOutline(src);
 
-        let _x = Math.round(x) || 0,
+        var _x = Math.round(x) || 0,
             _y = Math.round(y) || 0,
             _z = Math.round(z) || 0;
         src.rotation.enteredX = x;
@@ -1456,7 +1380,7 @@ define([
         if (needRender) {
             reactSrc.setState({
                 modelsrc: src.uuid ? src : null
-            }, () => {
+            }, function () {
                 checkAndReslice();
             });
             src.plane_boundary = planeBoundary(src);
@@ -1470,7 +1394,7 @@ define([
 
     function setImportWindowPosition() {
         if (document.getElementsByClassName('arrowBox').length > 0) {
-            let position = toScreenPosition(referenceMeshes[0], camera),
+            var position = toScreenPosition(referenceMeshes[0], camera),
                 importWindow = document.getElementsByClassName('arrowBox')[0],
                 importWindowWidth = parseInt($(importWindow).css('width').replace('px', '')),
                 importWindowHeight = parseInt($(importWindow).css('height').replace('px', ''));
@@ -1483,36 +1407,35 @@ define([
     }
 
     function setObjectDialoguePosition(obj) {
-        let o = obj || SELECTED;
+        var o = obj || SELECTED;
 
         if (!$.isEmptyObject(o)) {
 
-            let box = new THREE.BoxHelper(o, s.colorSelected),
-                // box = new THREE.BoundingBoxHelper(o, s.colorSelected),
-                position = toScreenPosition(o, camera),
+            var box = new THREE.BoxHelper(o, s.colorSelected),
+
+            // box = new THREE.BoundingBoxHelper(o, s.colorSelected),
+            position = toScreenPosition(o, camera),
                 cameraDistance = 0,
                 objectDialogueDistance = 0;
 
             box.size = getBoundingBox(o).size;
             box.update(o);
             cameraDistance = 320 / Math.sqrt(Math.pow(camera.position.x, 2) + Math.pow(camera.position.y, 2) + Math.pow(camera.position.z, 2));
-            objectDialogueDistance =
-                cameraDistance * 1.2 * Math.sqrt(Math.pow(box.size.x, 2) +
-                Math.pow(box.size.y, 2)) + 15;
+            objectDialogueDistance = cameraDistance * 1.2 * Math.sqrt(Math.pow(box.size.x, 2) + Math.pow(box.size.y, 2)) + 15;
             objectDialogueDistance = parseInt(objectDialogueDistance);
 
             reactSrc.setState({
                 modelSelected: o,
                 openObjectDialogue: true
-            }, function() {
-                let objectDialogue = document.getElementsByClassName('object-dialogue')[0],
+            }, function () {
+                var objectDialogue = document.getElementsByClassName('object-dialogue')[0],
                     objectDialogueWidth = parseInt($(objectDialogue).width()),
                     objectDialogueHeight = parseInt($(objectDialogue).height()),
                     leftOffset = parseInt(position.x),
-                    topOffset = (parseInt(position.y) - objectDialogueHeight / 2),
+                    topOffset = parseInt(position.y) - objectDialogueHeight / 2,
                     marginTop = container.offsetHeight / 2 - position.y;
 
-                let rightLimit = container.offsetWidth - objectDialogueWidth - leftOffset,
+                var rightLimit = container.offsetWidth - objectDialogueWidth - leftOffset,
                     topLimit = container.offsetHeight / 2 - objectDialogueHeight / 2;
 
                 if (objectDialogueDistance > rightLimit) {
@@ -1552,13 +1475,13 @@ define([
         SELECTED = obj || {};
 
         if (!$.isEmptyObject(obj)) {
-            PrintGlobalInteraction.onObjectFocus()
+            PrintGlobalInteraction.onObjectFocus();
 
-            objects.forEach(function(o) {
+            objects.forEach(function (o) {
                 o.outlineMesh.visible = false;
             });
 
-            if(obj.outlineMesh) {
+            if (obj.outlineMesh) {
                 obj.outlineMesh.visible = true;
             }
             setObjectDialoguePosition(obj);
@@ -1570,15 +1493,13 @@ define([
             scaleBeforeTransformY = obj.scale.y;
             scaleBeforeTransformZ = obj.scale.z;
 
-            if(reactSrc.state.mode === 'rotate') {
+            if (reactSrc.state.mode === 'rotate') {
                 setRotateMode();
-            }
-            else {
+            } else {
                 setScaleMode();
             }
-        }
-        else {
-            PrintGlobalInteraction.onObjectBlur()
+        } else {
+            PrintGlobalInteraction.onObjectBlur();
             transformMode = false;
             removeFromScene('TransformControl');
             _removeAllMeshOutline();
@@ -1589,7 +1510,7 @@ define([
 
     function alignCenter() {
         if (!$.isEmptyObject(SELECTED)) {
-            let reference = getReferenceDistance(SELECTED);
+            var reference = getReferenceDistance(SELECTED);
             SELECTED.position.x -= reference.x;
             SELECTED.position.y -= reference.y;
             SELECTED.position.z -= reference.z;
@@ -1607,9 +1528,9 @@ define([
     function groundIt(mesh) {
         mesh = mesh || SELECTED;
         if (!$.isEmptyObject(mesh)) {
-            let reference = getReferenceDistance(mesh);
+            var reference = getReferenceDistance(mesh);
             mesh.position.z -= reference.z;
-            if(mesh.outlineMesh) {
+            if (mesh.outlineMesh) {
                 mesh.outlineMesh.position.z -= reference.z;
             }
             blobExpired = true;
@@ -1618,29 +1539,30 @@ define([
     }
 
     function setDefaultFileName(fileNameWithExtension) {
-        if(typeof fileNameWithExtension === 'undefined') {
-            if(objects.length) {
+        if (typeof fileNameWithExtension === 'undefined') {
+            if (objects.length) {
                 defaultFileName = objects[0].fileName;
                 defaultFileName = defaultFileName.split('.');
                 defaultFileName.pop();
                 defaultFileName = defaultFileName.join('.');
             }
-        }
-        else {
-            let name = fileNameWithExtension.split('.');
+        } else {
+            var name = fileNameWithExtension.split('.');
             name.pop();
             name = name.join('.');
             defaultFileName = name;
         }
     }
 
-    function removeSelected(addToHistory = true) {
+    function removeSelected() {
+        var addToHistory = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+
         if (SELECTED && Object.keys(SELECTED).length > 0) {
-            if(addToHistory) {
+            if (addToHistory) {
                 addHistory('DELETE', SELECTED);
             }
 
-            let index = objects.indexOf(SELECTED);
+            var index = objects.indexOf(SELECTED);
 
             scene.remove(SELECTED.outlineMesh);
             scene.remove(SELECTED);
@@ -1648,7 +1570,7 @@ define([
             if (index > -1) {
                 objects.splice(index, 1);
             } else {
-                console.log('Remove:: Object cannot find' , SELECTED);
+                console.log('Remove:: Object cannot find', SELECTED);
             }
 
             transformControl.detach(SELECTED);
@@ -1661,16 +1583,15 @@ define([
 
             setDefaultFileName();
             render();
-            if(objects.length === 0) {
+            if (objects.length === 0) {
                 registerDragToImport();
                 reactSrc.setState({
                     openImportWindow: true,
                     hasObject: false
-                }, function() {
+                }, function () {
                     setImportWindowPosition();
                 });
-            }
-            else {
+            } else {
                 checkAndReslice();
             }
 
@@ -1679,13 +1600,13 @@ define([
     }
 
     function duplicateSelected() {
-        if(SELECTED) {
-            let mesh = new THREE.Mesh(SELECTED.geometry, SELECTED.material);
+        if (SELECTED) {
+            var mesh = new THREE.Mesh(SELECTED.geometry, SELECTED.material);
             mesh.up = new THREE.Vector3(0, 0, 1);
 
-            stopSlicing().then(() => {
-                sliceMaster.addTask('duplicate', SELECTED.uuid, mesh.uuid).then((result) => {
-                    if(result.status.toUpperCase() === DeviceConstants.OK) {
+            stopSlicing().then(function () {
+                sliceMaster.addTask('duplicate', SELECTED.uuid, mesh.uuid).then(function (result) {
+                    if (result.status.toUpperCase() === DeviceConstants.OK) {
                         Object.assign(mesh.scale, SELECTED.scale);
                         mesh.rotation.enteredX = SELECTED.rotation.enteredX;
                         mesh.rotation.enteredY = SELECTED.rotation.enteredY;
@@ -1703,8 +1624,10 @@ define([
                         groundIt(mesh);
                         createOutline(mesh);
 
-                        let source = objects.filter(o => o.uuid === SELECTED.uuid)[0];
-                        if(typeof source !== 'undefined') {
+                        var source = objects.filter(function (o) {
+                            return o.uuid === SELECTED.uuid;
+                        })[0];
+                        if (typeof source !== 'undefined') {
                             mesh.file = source.file;
                         }
 
@@ -1720,16 +1643,14 @@ define([
                         syncObjectOutline(mesh);
                         setObjectDialoguePosition(mesh);
                         render();
-                    }
-                    else {
-                        if(result.error === ErrorConstants.NAME_NOT_EXIST) {
+                    } else {
+                        if (result.error === ErrorConstants.NAME_NOT_EXIST) {
                             AlertActions.showPopupError('duplicateError', lang.slicer.error[result.error]);
-                        }
-                        else {
+                        } else {
                             AlertActions.showPopupError('duplicateError', result.info);
                         }
                     }
-                }).fail((error) => {
+                }).fail(function (error) {
                     processSlicerError(error);
                 });
             });
@@ -1737,10 +1658,10 @@ define([
     }
 
     function planeBoundary(sourceMesh) {
-        let transformation = JSON.stringify({ p: sourceMesh.position, s: sourceMesh.scale, r: sourceMesh.rotation}, (key, val) => {
+        var transformation = JSON.stringify({ p: sourceMesh.position, s: sourceMesh.scale, r: sourceMesh.rotation }, function (key, val) {
             // Fix precision to .00001
             if (val === undefined) {
-                console.warn("Empty Parameter:" , key);
+                console.warn("Empty Parameter:", key);
                 return val;
             }
             return val.toFixed ? Number(val.toFixed(5)) : val;
@@ -1754,86 +1675,82 @@ define([
 
 
         // sort the index of each point in stl
-        let stl_index = [];
-        let boundary = [];
+        var stl_index = [];
+        var boundary = [];
 
         if (sourceMesh.geometry.type === 'Geometry') {
             // define Cross product function on 2d plane
-            let vs = sourceMesh.geometry.vertices;
-            let cross = (function cross(p0, p1, p2) {
-                return ((p1.x - p0.x) * (p2.y - p0.y)) - ((p1.y - p0.y) * (p2.x - p0.x));
-            });
+            var vs = sourceMesh.geometry.vertices;
+            var cross = function cross(p0, p1, p2) {
+                return (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x);
+            };
 
             stl_index = new Uint32Array(vs.length);
 
-            for (let i = 0; i < vs.length; i += 1) {
+            for (var i = 0; i < vs.length; i += 1) {
                 stl_index[i] = i;
             }
 
-            stl_index.sort((a, b) => {
-                let c = vs[a].y === vs[b].y;
+            stl_index.sort(function (a, b) {
+                var c = vs[a].y === vs[b].y;
                 return c ? c : vs[a].x - vs[b].x;
             });
 
             // find boundary
             // compute upper hull
-            for (let i = 0; i < stl_index.length; i += 1) {
-                while( boundary.length >= 2 && cross(vs[boundary[boundary.length - 2]], vs[boundary[boundary.length - 1]], vs[stl_index[i]]) <= 0){
+            for (var _i = 0; _i < stl_index.length; _i += 1) {
+                while (boundary.length >= 2 && cross(vs[boundary[boundary.length - 2]], vs[boundary[boundary.length - 1]], vs[stl_index[_i]]) <= 0) {
                     boundary.pop();
                 }
-                boundary.push(stl_index[i]);
+                boundary.push(stl_index[_i]);
             }
             // compute lower hull
-            let t = boundary.length + 1;
-            for (let i = stl_index.length - 2 ; i >= 0; i -= 1) {
-                while( boundary.length >= t && cross(vs[boundary[boundary.length - 2]], vs[boundary[boundary.length - 1]], vs[stl_index[i]]) <= 0){
+            var t = boundary.length + 1;
+            for (var _i2 = stl_index.length - 2; _i2 >= 0; _i2 -= 1) {
+                while (boundary.length >= t && cross(vs[boundary[boundary.length - 2]], vs[boundary[boundary.length - 1]], vs[stl_index[_i2]]) <= 0) {
                     boundary.pop();
                 }
-                boundary.push(stl_index[i]);
+                boundary.push(stl_index[_i2]);
             }
 
             // delete redundant point(i.e., starting point)
             boundary.pop();
-        }
-        else{
-            let vs = sourceMesh.geometry.getAttribute('position');
+        } else {
+            var _vs = sourceMesh.geometry.getAttribute('position');
             // define Cross product function on 2d plane for BufferGeometry
-            let cross = (function cross(p0, p1, p2) {
+            var _cross = function cross(p0, p1, p2) {
 
-                return ((vs[p1 * 3 + 0] - vs[p0 * 3 + 0]) *
-                        (vs[p2 * 3 + 1] - vs[p0 * 3 + 1])) -
-                       ((vs[p1 * 3 + 1] - vs[p0 * 3 + 1]) *
-                        (vs[p2 * 3 + 0] - vs[p0 * 3 + 0]))
-            });
+                return (_vs[p1 * 3 + 0] - _vs[p0 * 3 + 0]) * (_vs[p2 * 3 + 1] - _vs[p0 * 3 + 1]) - (_vs[p1 * 3 + 1] - _vs[p0 * 3 + 1]) * (_vs[p2 * 3 + 0] - _vs[p0 * 3 + 0]);
+            };
 
-            let meshSize = vs.count / vs.itemSize;
+            var meshSize = _vs.count / _vs.itemSize;
 
             stl_index = new Uint32Array(meshSize);
-            for (let i = 0; i < meshSize; i += 1) {
-                stl_index[i] = i;
+            for (var _i3 = 0; _i3 < meshSize; _i3 += 1) {
+                stl_index[_i3] = _i3;
             }
 
-            stl_index.sort((a, b) => {
-                let c = vs[a * 3 + 1] - vs[b * 3 + 1];
-                return c ? c : vs[a * 3 + 0] - vs[b * 3 + 0];
+            stl_index.sort(function (a, b) {
+                var c = _vs[a * 3 + 1] - _vs[b * 3 + 1];
+                return c ? c : _vs[a * 3 + 0] - _vs[b * 3 + 0];
             });
 
             // find boundary
             // compute upper hull
-            for (let i = 0; i < stl_index.length; i += 1) {
-                while ( boundary.length >= 2 && cross(boundary[boundary.length - 2], boundary[boundary.length - 1], stl_index[i]) <= 0) {
+            for (var _i4 = 0; _i4 < stl_index.length; _i4 += 1) {
+                while (boundary.length >= 2 && _cross(boundary[boundary.length - 2], boundary[boundary.length - 1], stl_index[_i4]) <= 0) {
                     boundary.pop();
                 }
-                boundary.push(stl_index[i]);
+                boundary.push(stl_index[_i4]);
             }
 
             // compute lower hull
-            let t = boundary.length + 1;
-            for (let i = stl_index.length - 2 ; i >= 0; i -= 1) {
-                while( boundary.length >= t && cross(boundary[boundary.length - 2], boundary[boundary.length - 1], stl_index[i]) <= 0) {
+            var _t = boundary.length + 1;
+            for (var _i5 = stl_index.length - 2; _i5 >= 0; _i5 -= 1) {
+                while (boundary.length >= _t && _cross(boundary[boundary.length - 2], boundary[boundary.length - 1], stl_index[_i5]) <= 0) {
                     boundary.pop();
                 }
-                boundary.push(stl_index[i]);
+                boundary.push(stl_index[_i5]);
             }
             // delete redundant point(i.e., starting point)
             boundary.pop();
@@ -1842,14 +1759,13 @@ define([
     }
 
     function checkOutOfBounds(sourceMesh) {
-        let d = $.Deferred();
+        var d = $.Deferred();
         if (!$.isEmptyObject(sourceMesh)) {
-            let vector = new THREE.Vector3();
-            sourceMesh.position.isOutOfBounds = sourceMesh.plane_boundary.some(function(v) {
+            var vector = new THREE.Vector3();
+            sourceMesh.position.isOutOfBounds = sourceMesh.plane_boundary.some(function (v) {
                 if (sourceMesh.geometry.type === 'Geometry') {
                     vector = sourceMesh.geometry.vertices[v].clone();
-                }
-                else{
+                } else {
                     vector.x = sourceMesh.geometry.attributes.position.array[v * 3 + 0];
                     vector.y = sourceMesh.geometry.attributes.position.array[v * 3 + 1];
                     vector.z = sourceMesh.geometry.attributes.position.array[v * 3 + 2];
@@ -1861,13 +1777,13 @@ define([
 
             sourceMesh.outlineMesh.material.color.setHex(sourceMesh.position.isOutOfBounds ? s.colorOutside : s.colorSelected);
 
-            let hasOutOfBoundsObject = objects.some(function(o) {
+            var hasOutOfBoundsObject = objects.some(function (o) {
                 return o.position.isOutOfBounds;
             });
 
             reactSrc.setState({
                 hasOutOfBoundsObject: hasOutOfBoundsObject
-            }, () => {
+            }, function () {
                 d.resolve();
             });
         }
@@ -1875,11 +1791,11 @@ define([
     }
 
     function checkCollisionWithAny(src, callback) {
-        let _objects,
+        var _objects = void 0,
             collided = false,
             sourceBox = new THREE.Box3();
 
-        _objects = objects.filter(function(o) {
+        _objects = objects.filter(function (o) {
             return o.uuid !== src.uuid;
         });
 
@@ -1888,123 +1804,123 @@ define([
         // sourceBox.update(src);
         // sourceBox.box.intersectsBox = function ( box ) {
         //
-		// // using 6 splitting planes to rule out intersections.
+        // // using 6 splitting planes to rule out intersections.
         //
-    	// 	if ( box.max.x < this.min.x || box.min.x > this.max.x ||
-		// 		 box.max.y < this.min.y || box.min.y > this.max.y ||
-		// 		 box.max.z < this.min.z || box.min.z > this.max.z ) {
+        // 	if ( box.max.x < this.min.x || box.min.x > this.max.x ||
+        // 		 box.max.y < this.min.y || box.min.y > this.max.y ||
+        // 		 box.max.z < this.min.z || box.min.z > this.max.z ) {
         //
-    	// 		return false;
-    	// 	}
-    	// 	return true;
-    	// };
+        // 		return false;
+        // 	}
+        // 	return true;
+        // };
 
-        for(let i = 0; i < _objects.length; i++) {
-            if(!collided) {
-                let box = new THREE.Box3();
+        for (var i = 0; i < _objects.length; i++) {
+            if (!collided) {
+                var box = new THREE.Box3();
                 // let box = new THREE.BoundingBoxHelper(_objects[i], s.colorSelected);
                 // box.update(_objects[i]);
                 box.setFromObject(_objects[i]);
-                if(sourceBox.intersectsBox(box)) {
+                if (sourceBox.intersectsBox(box)) {
                     collided = true;
                     callback(box);
                 }
             }
         }
 
-        if(!collided) {
+        if (!collided) {
             callback(null);
         }
     }
 
     function autoArrange(model) {
-        let level = 1,
+        var level = 1,
             spacing = 2,
             inserted = false,
             target = new THREE.BoxHelper(model),
-            // target = new THREE.BoundingBoxHelper(model),
-            mover,
-            arithmetic,
-            spacingX,
-            spacingY,
-            originalPosition,
-            _model;
+
+        // target = new THREE.BoundingBoxHelper(model),
+        _mover = void 0,
+            arithmetic = void 0,
+            spacingX = void 0,
+            spacingY = void 0,
+            originalPosition = void 0,
+            _model = void 0;
 
         originalPosition = model.position.clone();
 
-        spacingX = function(size) {
+        spacingX = function spacingX(size) {
             return level * (size.x + spacing);
         };
 
-        spacingY = function(size) {
+        spacingY = function spacingY(size) {
             return level * (size.y + spacing);
         };
 
         arithmetic = {
-            '1': function(size) {
+            '1': function _(size) {
                 model.position.x = spacingX(size);
                 model.position.y = originalPosition.y;
             },
-            '2': function(size) {
+            '2': function _(size) {
                 model.position.x = spacingX(size);
                 model.position.y = -spacingY(size);
             },
-            '3': function(size) {
+            '3': function _(size) {
                 model.position.x = originalPosition.x;
                 model.position.y = -spacingY(size);
             },
-            '4': function(size) {
+            '4': function _(size) {
                 model.position.x = -spacingX(size);
                 model.position.y = -spacingY(size);
             },
-            '5': function(size) {
+            '5': function _(size) {
                 model.position.x = -spacingX(size);
                 model.position.y = originalPosition.y;
             },
-            '6': function(size) {
+            '6': function _(size) {
                 model.position.x = -spacingX(size);
                 model.position.y = spacingY(size);
             },
-            '7': function(size) {
+            '7': function _(size) {
                 model.position.x = originalPosition.x;
                 model.position.y = spacingY(size);
             },
-            '8': function(size) {
+            '8': function _(size) {
                 model.position.x = spacingX(size);
                 model.position.y = spacingY(size);
             }
         };
 
         target.update(model);
-        mover = function(ref, method) {
-            let size = getBoundingBox(ref).size;
+        _mover = function mover(ref, method) {
+            var size = getBoundingBox(ref).size;
             // let size = ref.box.size();
             arithmetic[method.toString()](size);
-            checkCollisionWithAny(model, function(collideObject) {
-                if(collideObject !== null) {
-                    if(method === Object.keys(arithmetic).length) {
+            checkCollisionWithAny(model, function (collideObject) {
+                if (collideObject !== null) {
+                    if (method === Object.keys(arithmetic).length) {
                         level++;
                         method = 0;
                     }
-                    mover(ref, method + 1);
+                    _mover(ref, method + 1);
                 }
             });
         };
 
-        checkCollisionWithAny(model, function(collideObject) {
-            if(collideObject !== null) {
-                let ref = new THREE.BoxHelper(collideObject, s.colorSelected);
+        checkCollisionWithAny(model, function (collideObject) {
+            if (collideObject !== null) {
+                var ref = new THREE.BoxHelper(collideObject, s.colorSelected);
                 // let ref = new THREE.BoundingBoxHelper(collideObject, s.colorSelected);
                 ref.update(collideObject);
-                mover(ref, 1);
+                _mover(ref, 1);
             }
         });
-
     }
 
     function syncObjectParameter() {
-        let d = $.Deferred();
-        _syncObjectParameter(objects, 0, () => {
+        var d = $.Deferred();
+        _syncObjectParameter(objects, 0, function () {
             d.resolve('');
         });
 
@@ -2012,36 +1928,34 @@ define([
     }
 
     function downloadFCode(fileName) {
-        if(!fileName) {
+        if (!fileName) {
             fileName = defaultFileName;
         }
 
         fileName = fileName + '.fc';
 
         selectObject(null);
-        let d = $.Deferred();
-        if(objects.length > 0) {
-            const langFile = i18n.lang.topmenu.file;
-            const fileReader = new FileReader();
+        var d = $.Deferred();
+        if (objects.length > 0) {
+            var langFile = i18n.lang.topmenu.file;
+            var fileReader = new FileReader();
 
             fileReader.onload = function () {
                 window.electron.ipc.send('save-dialog', langFile.save_fcode, langFile.all_files, langFile.fcode_files, ['fc'], fileName, new Uint8Array(this.result));
             };
 
             if (!blobExpired) {
-                if(hasPreviewImage) {
+                if (hasPreviewImage) {
                     d.resolve(fileReader.readAsArrayBuffer(responseBlob));
-                }
-                else {
-                    takeSnapShot().then(() => {
+                } else {
+                    takeSnapShot().then(function () {
                         d.resolve(fileReader.readAsArrayBuffer(responseBlob));
                     });
                 }
-            }
-            else {
-                getFCode().then((blob) => {
+            } else {
+                getFCode().then(function (blob) {
                     if (blob instanceof Blob) {
-                        takeSnapShot().then(() => {
+                        takeSnapShot().then(function () {
                             ProgressActions.close();
                             d.resolve(fileReader.readAsArrayBuffer(responseBlob));
                         });
@@ -2050,11 +1964,10 @@ define([
             }
 
             return d.promise();
-        }
-        else {
+        } else {
             // for importing .fc or .gcode
-            if(importFromFCode || importFromGCode) {
-                getFCode().then(function(blob) {
+            if (importFromFCode || importFromGCode) {
+                getFCode().then(function (blob) {
                     if (blob instanceof Blob) {
                         ProgressActions.close();
                         d.resolve(saveAs(blob, fileName));
@@ -2066,26 +1979,26 @@ define([
     }
 
     function getBlobFromScene() {
-        let ccp = camera.position.clone(),
+        var ccp = camera.position.clone(),
             ccr = camera.rotation.clone(),
             d = $.Deferred(),
             ol = _getCameraLook(camera);
 
         camera.position.set(0, -180, 60);
         camera.rotation.set(originalCameraRotation.x, originalCameraRotation.y, originalCameraRotation.z, originalCameraRotation.order);
-        camera.lookAt(new THREE.Vector3(0,380,0));
+        camera.lookAt(new THREE.Vector3(0, 380, 0));
         render();
 
         // let s = SELECTED;
         toggleTransformControl(true);
-        renderer.domElement.toBlob(function(blob) {
+        renderer.domElement.toBlob(function (blob) {
             previewUrl = URL.createObjectURL(blob);
             camera.position.set(ccp.x, ccp.y, ccp.z);
             camera.rotation.set(ccr.x, ccr.y, ccr.z, ccr.order);
             camera.lookAt(ol);
             toggleTransformControl(false);
             render();
-            cropImageUsingCanvas(blob).then((blob2) => {
+            cropImageUsingCanvas(blob).then(function (blob2) {
                 d.resolve(blob2);
             });
         });
@@ -2093,31 +2006,31 @@ define([
         return d.promise();
     }
 
-
     function cropImageUsingCanvas(data) {
-        if(data instanceof Blob) {
+        if (data instanceof Blob) {
             console.log("Loading blob", data);
             // Blob to HTMLImage
-            let newImg = document.createElement('img'),
+            var newImg = document.createElement('img'),
                 url = URL.createObjectURL(data),
-                d = $.Deferred();
+                _d = $.Deferred();
 
-            newImg.onload = function() {
+            newImg.onload = function () {
                 console.log("Loaded image", url, newImg.width, newImg.height);
                 URL.revokeObjectURL(url);
 
-                cropImageUsingCanvas(newImg, true).then(function(blob) {
+                cropImageUsingCanvas(newImg, true).then(function (blob) {
                     console.log("Resolved cropping", url);
-                    d.resolve(blob);
+                    _d.resolve(blob);
                 });
             };
 
             newImg.src = url;
 
-            return d.promise();
+            return _d.promise();
         }
         //HTMLImage to Canvas, Canvas to Blob
-        let width = 640, height = 640,
+        var width = 640,
+            height = 640,
             canvas = document.createElement('canvas'),
             sh = data.height,
             sw = data.width,
@@ -2125,27 +2038,27 @@ define([
             sy = 0,
             d = $.Deferred();
 
-        if(data.width > data.height) {
-            sx = (data.width - data.height)/2;
+        if (data.width > data.height) {
+            sx = (data.width - data.height) / 2;
             sw = data.height;
-        }else if(data.width < data.height) {
-            sy = (data.height - data.width)/2;
+        } else if (data.width < data.height) {
+            sy = (data.height - data.width) / 2;
             sh = data.width;
         }
 
         canvas.width = width;
         canvas.height = height;
-        let context = canvas.getContext('2d');
+        var context = canvas.getContext('2d');
         console.log("drawing image element", sx, sy, sw, sh);
         context.drawImage(data, sx, sy, sw, sh, 0, 0, width, height);
-        canvas.toBlob(function(blob) {
+        canvas.toBlob(function (blob) {
             d.resolve(blob);
         });
         return d.promise();
     }
 
     function removeFromScene(name) {
-        for (let i = scene.children.length - 1; i >= 0; i--) {
+        for (var i = scene.children.length - 1; i >= 0; i--) {
             if (scene.children[i].name === name) {
                 scene.children.splice(i, 1);
             }
@@ -2153,7 +2066,7 @@ define([
     }
 
     function updateFromScene(name) {
-        for (let i = scene.children.length - 1; i >= 0; i--) {
+        for (var i = scene.children.length - 1; i >= 0; i--) {
             if (scene.children[i].name === name) {
                 scene.children[i].update();
             }
@@ -2172,32 +2085,31 @@ define([
         }
     }
 
-
     function changePreviewLayer(layerNumber) {
 
-        for (let i = 1; i < previewScene.children.length; i++) {
-            previewScene.children[i].visible = i <= layerNumber;
+        for (var _i6 = 1; _i6 < previewScene.children.length; _i6++) {
+            previewScene.children[_i6].visible = _i6 <= layerNumber;
         }
 
-        if ( previewScene.children.length > printPath.length && previewScene.children.length > 0)  {
+        if (previewScene.children.length > printPath.length && previewScene.children.length > 0) {
             // let trashLine = previewScene.children[previewScene.children.length - 1]
-            previewScene.children.splice( previewScene.children.length - 1, 1) ;
+            previewScene.children.splice(previewScene.children.length - 1, 1);
             // trashLine.dispose();
         }
 
-        let g = new THREE.BufferGeometry(),
+        var g = new THREE.BufferGeometry(),
             i = 0,
             layer = printPath[layerNumber];
 
-        if ( layer && layer.length ) {
-            let positions = new Float32Array(layer.length * 3 * 2 - 6);
-            let colors = new Float32Array(layer.length * 3 * 2 - 6);
-            for (let p = 1; p < layer.length; p++) {
-                for (let tmp = 1; tmp >= 0; tmp--) {
+        if (layer && layer.length) {
+            var positions = new Float32Array(layer.length * 3 * 2 - 6);
+            var colors = new Float32Array(layer.length * 3 * 2 - 6);
+            for (var p = 1; p < layer.length; p++) {
+                for (var tmp = 1; tmp >= 0; tmp--) {
                     positions[i * 3] = layer[p - tmp][0];
                     positions[i * 3 + 1] = layer[p - tmp][1];
                     positions[i * 3 + 2] = layer[p - tmp][2];
-                    let color = previewColors[layer[p][3]+1];
+                    var color = previewColors[layer[p][3] + 1];
                     colors[i * 3] = Math.min(1, color.r * 0.8);
                     colors[i * 3 + 1] = Math.min(1, color.g * 0.8);
                     colors[i * 3 + 2] = Math.min(1, color.b * 0.8);
@@ -2205,12 +2117,12 @@ define([
                 }
             }
 
-            g.addAttribute('position', new THREE.BufferAttribute(positions,3));
+            g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
             g.addAttribute('color', new THREE.BufferAttribute(colors, 3));
             g.computeBoundingSphere();
         }
 
-        let line = new THREE.Line(g, emphasizeLineMaterial); // A layer is a 'continuos line'
+        var line = new THREE.Line(g, emphasizeLineMaterial); // A layer is a 'continuos line'
         line.name = 'line';
         previewScene.add(line);
 
@@ -2231,7 +2143,7 @@ define([
         });
         panningOffset = camera.position.clone().sub(camera.position);
 
-        if(scene.cameraLight) {
+        if (scene.cameraLight) {
             scene.cameraLight.position.copy(camera.position);
         }
     }
@@ -2247,7 +2159,7 @@ define([
 
         renderer.clear();
         if (outlineScene.children.length > 0) {
-            renderer.render( outlineScene, camera );
+            renderer.render(outlineScene, camera);
         }
 
         renderer.clearDepth();
@@ -2256,7 +2168,7 @@ define([
 
     function addSizeProperty(obj) {
         if (!$.isEmptyObject(obj)) {
-            let boundingBox = getBoundingBox(obj);
+            var boundingBox = getBoundingBox(obj);
             // let boundingBox = new THREE.BoundingBoxHelper(obj);
             // boundingBox.update();
             obj.size = boundingBox.size;
@@ -2278,7 +2190,7 @@ define([
     // Helper Functions ---
 
     function degreeToRadian(degree) {
-        return (degree / 360 * Math.PI * 2) || 0;
+        return degree / 360 * Math.PI * 2 || 0;
     }
 
     function radianToDegree(radian) {
@@ -2289,8 +2201,8 @@ define([
         if (degree === 0) {
             return 0;
         }
-        let degreeStep = shiftPressed ? 15 : s.degreeStep;
-        return (Math.round(degree / degreeStep) * degreeStep);
+        var degreeStep = shiftPressed ? 15 : s.degreeStep;
+        return Math.round(degree / degreeStep) * degreeStep;
     }
 
     function updateObjectSize(src) {
@@ -2308,7 +2220,6 @@ define([
         reactSrc.setState({
             modelSelected: src
         });
-
     }
 
     function updateObjectRotation(src) {
@@ -2328,17 +2239,17 @@ define([
 
     function toScreenPosition(obj, cam) {
         if (!$.isEmptyObject(obj)) {
-            let vector = new THREE.Vector3();
+            var vector = new THREE.Vector3();
 
             // TODO: need to update this when resize window
-            let widthHalf = 0.5 * container.offsetWidth;
-            let heightHalf = 0.5 * container.offsetHeight;
+            var widthHalf = 0.5 * container.offsetWidth;
+            var heightHalf = 0.5 * container.offsetHeight;
 
             obj.updateMatrixWorld();
             vector.setFromMatrixPosition(obj.matrixWorld);
             vector.project(cam);
 
-            vector.x = (vector.x * widthHalf) + widthHalf;
+            vector.x = vector.x * widthHalf + widthHalf;
             vector.y = -(vector.y * heightHalf) + heightHalf;
 
             return {
@@ -2353,14 +2264,18 @@ define([
             color: s.colorSelected,
             side: THREE.BackSide
         });
-    	var outlineMesh = new THREE.Mesh( mesh.geometry, outlineMaterial ),
-            { x, y, z } = mesh.position;
+        var outlineMesh = new THREE.Mesh(mesh.geometry, outlineMaterial),
+            _mesh$position = mesh.position,
+            x = _mesh$position.x,
+            y = _mesh$position.y,
+            z = _mesh$position.z;
 
-    	outlineMesh.position.set(x, y, z);
-    	outlineMesh.scale.multiplyScalar(1.05);
+
+        outlineMesh.position.set(x, y, z);
+        outlineMesh.scale.multiplyScalar(1.05);
         outlineMesh.up = new THREE.Vector3(0, 0, 1);
         mesh.outlineMesh = outlineMesh;
-    	outlineScene.add(outlineMesh);
+        outlineScene.add(outlineMesh);
     }
 
     function syncObjectOutline(src) {
@@ -2371,25 +2286,23 @@ define([
     }
 
     function displayProgress(step, total, progress) {
-        if(step === total) {
+        if (step === total) {
             ProgressActions.updating(lang.print.uploaded, 80);
-        }
-        else {
+        } else {
             ProgressActions.updating(lang.print.uploaded, progress * 0.8);
         }
     }
 
     function stopSlicing() {
-        let d = $.Deferred();
+        var d = $.Deferred();
         clearInterval(slicingStatus.reporter);
-        if(slicingStatus.inProgress) {
-            sliceMaster.addTask('stopSlicing').then(() => {
+        if (slicingStatus.inProgress) {
+            sliceMaster.addTask('stopSlicing').then(function () {
                 slicingStatus.inProgress = false;
                 slicingStatusStream.onNext(slicingStatus);
                 d.resolve('');
             });
-        }
-        else {
+        } else {
             d.resolve('');
         }
         return d.promise();
@@ -2412,31 +2325,33 @@ define([
             openObjectDialogue: false
         });
 
-        appendPreviewPath(importedFCode, function() {
+        appendPreviewPath(importedFCode, function () {
             ProgressActions.close();
             callback();
         }, importFromGCode);
     }
 
     function downloadScene() {
-        if(objects.length === 0) { return; }
+        if (objects.length === 0) {
+            return;
+        }
 
         packer.clear();
 
-        if(objects.length > 0) {
-            objects.forEach(function(model) {
+        if (objects.length > 0) {
+            objects.forEach(function (model) {
                 packer.addInfo({
-                    size : model.size,
-                    rotation : model.rotation,
-                    position : model.position,
-                    scale : model.scale
+                    size: model.size,
+                    rotation: model.rotation,
+                    position: model.position,
+                    scale: model.scale
                 });
                 packer.addFile(model.file);
             });
         }
 
-        const langFile = i18n.lang.topmenu.file;
-        const fileReader = new FileReader();
+        var langFile = i18n.lang.topmenu.file;
+        var fileReader = new FileReader();
 
         ProgressActions.close();
 
@@ -2453,39 +2368,34 @@ define([
     }
 
     function _handleLoadScene(sceneFile) {
-        packer.unpack(sceneFile).then(function(_sceneFile) {
-            let files = _sceneFile[0];
+        packer.unpack(sceneFile).then(function (_sceneFile) {
+            var files = _sceneFile[0];
 
             sceneFile = _sceneFile;
 
-            appendModels(files, 0, function() {
+            appendModels(files, 0, function () {
                 updateObject();
             });
         });
 
-        let updateObject = function() {
+        var updateObject = function updateObject() {
             sceneFile.shift();
-            objects.forEach(function(obj, i) {
-                let ref = sceneFile[i];
+            objects.forEach(function (obj, i) {
+                var ref = sceneFile[i];
 
                 obj.position.x = ref.position.x;
                 obj.position.y = ref.position.y;
                 obj.outlineMesh.position.x = ref.position.x;
                 obj.outlineMesh.position.y = ref.position.y;
 
-                setRotation(
-                    Math.round(ref.rotation.enteredX),
-                    Math.round(ref.rotation.enteredY),
-                    Math.round(ref.rotation.enteredZ), true, obj);
+                setRotation(Math.round(ref.rotation.enteredX), Math.round(ref.rotation.enteredY), Math.round(ref.rotation.enteredZ), true, obj);
 
                 setSize(ref.size, true, obj);
 
                 selectObject(null);
                 render();
-
             });
         };
-
     }
 
     // Private Functions ---
@@ -2494,23 +2404,11 @@ define([
     function _syncObjectParameter(o, index, callback) {
         index = index || 0;
         if (index < o.length) {
-            sliceMaster.addTask(
-                'set',
-                o[index].uuid,
-                o[index].position.x,
-                o[index].position.y,
-                o[index].position.z,
-                o[index].rotation.x,
-                o[index].rotation.y,
-                o[index].rotation.z,
-                o[index].scale.x,
-                o[index].scale.y,
-                o[index].scale.z
-            ).then(() => {
+            sliceMaster.addTask('set', o[index].uuid, o[index].position.x, o[index].position.y, o[index].position.z, o[index].rotation.x, o[index].rotation.y, o[index].rotation.z, o[index].scale.x, o[index].scale.y, o[index].scale.z).then(function () {
                 if (index < o.length) {
                     _syncObjectParameter(o, index + 1, callback);
                 }
-            }).fail((error) => {
+            }).fail(function (error) {
                 index = o.length;
                 processSlicerError(error);
             });
@@ -2520,13 +2418,13 @@ define([
     }
 
     function _addShadowedLight(x, y, z, color, intensity) {
-        let directionalLight = new THREE.DirectionalLight(color, intensity);
+        var directionalLight = new THREE.DirectionalLight(color, intensity);
         directionalLight.position.set(x, y, z);
 
         scene.add(directionalLight);
         directionalLight.castShadow = true;
 
-        let d = 1;
+        var d = 1;
         directionalLight.shadow.camera.left = -d;
         directionalLight.shadow.camera.right = d;
         directionalLight.shadow.camera.top = d;
@@ -2553,28 +2451,27 @@ define([
     }
 
     function _handleSliceComplete() {
-        if(previewMode) {
+        if (previewMode) {
             slicingStatus.isComplete = true;
             _showWait(lang.print.drawingPreview, !showStopButton);
-            sliceMaster.addTask('getPath').then((result) => {
+            sliceMaster.addTask('getPath').then(function (result) {
                 printPath = result;
-                _drawPath().then(function() {
+                _drawPath().then(function () {
                     _resetPreviewLayerSlider();
                     ProgressActions.close();
                     slicingStatus.showProgress = false;
                 });
-            }).fail((error) => {
+            }).fail(function (error) {
                 processSlicerError(error);
             });
-        }
-        else {
+        } else {
             slicingStatus.isComplete = true;
             ProgressActions.close();
         }
 
-        slicingStatus.inProgress    = false;
-        slicingStatus.lastProgress  = null;
-        slicingStatus.lastReport    = null;
+        slicingStatus.inProgress = false;
+        slicingStatus.lastProgress = null;
+        slicingStatus.lastReport = null;
         slicingStatusStream.onNext(slicingStatus);
     }
 
@@ -2582,20 +2479,19 @@ define([
         slicingStatus.showProgress = false;
         _closePreview();
 
-        if(importFromFCode || importFromGCode) {
+        if (importFromFCode || importFromGCode) {
             _exitImportFromFCodeMode();
         }
     }
 
     function addHistory(cmd, obj) {
-        if(SELECTED) {
-            let entry = { size: {}, rotation: {}, position: {}, scale: {} };
+        if (SELECTED) {
+            var entry = { size: {}, rotation: {}, position: {}, scale: {} };
 
-            if(cmd === 'DELETE' || cmd === 'ADD') {
+            if (cmd === 'DELETE' || cmd === 'ADD') {
                 entry.cmd = cmd;
                 entry.src = obj;
-            }
-            else {
+            } else {
                 entry.uuid = SELECTED.uuid;
                 Object.assign(entry.position, SELECTED.position);
                 Object.assign(entry.size, SELECTED.size);
@@ -2609,29 +2505,29 @@ define([
     }
 
     function alignCenterPosition() {
-      if (!$.isEmptyObject(SELECTED)) {
-        alignCenter();
-        setObjectDialoguePosition(SELECTED);
-        blobExpired = true;
-        hasPreviewImage = false;
-        slicingStatus.error = null;
-        startSlicing(slicingType.F);
-        checkOutOfBounds(SELECTED).then(() => {
-            // disable preview when object are all out of bound
-            reactSrc.setState({ hasObject: !allOutOfBound()});
-            if(blobExpired && objects.length > 0 && !allOutOfBound()) {
-                slicingStatus.showProgress = false;
-                checkAndReslice();
-            }
-        });
-        render();
-      }
+        if (!$.isEmptyObject(SELECTED)) {
+            alignCenter();
+            setObjectDialoguePosition(SELECTED);
+            blobExpired = true;
+            hasPreviewImage = false;
+            slicingStatus.error = null;
+            startSlicing(slicingType.F);
+            checkOutOfBounds(SELECTED).then(function () {
+                // disable preview when object are all out of bound
+                reactSrc.setState({ hasObject: !allOutOfBound() });
+                if (blobExpired && objects.length > 0 && !allOutOfBound()) {
+                    slicingStatus.showProgress = false;
+                    checkAndReslice();
+                }
+            });
+            render();
+        }
     }
 
     function undo() {
-        if(history.length > 0) {
-            let entry = history.pop();
-            if(entry.cmd === 'DELETE') {
+        if (history.length > 0) {
+            var entry = history.pop();
+            if (entry.cmd === 'DELETE') {
                 objects.push(entry.src);
                 scene.add(entry.src);
                 scene.add(entry.src.outlineMesh);
@@ -2639,21 +2535,19 @@ define([
                 SELECTED = entry.src;
                 selectObject(SELECTED);
                 reactSrc.setState({ hasObject: true });
-            }
-            else if(entry.cmd === 'ADD') {
+            } else if (entry.cmd === 'ADD') {
                 SELECTED = entry.src;
                 removeSelected(false);
-            }
-            else {
-                objects.forEach(function(model) {
-                    if(model.uuid === entry.uuid) {
+            } else {
+                objects.forEach(function (model) {
+                    if (model.uuid === entry.uuid) {
                         _setObject(entry, model);
                         setObjectDialoguePosition(model);
                         selectObject(model);
                     }
                 });
             }
-            if(history.length == 0) {
+            if (history.length == 0) {
                 PrintGlobalInteraction.onObjectChanged(false);
             }
         }
@@ -2662,8 +2556,8 @@ define([
     function clearScene() {
         objects.length = 0;
         outlineScene.children.length = 0;
-        for(let i = scene.children.length - 1; i >= 0; i--) {
-            if(scene.children[i].name === 'custom') {
+        for (var i = scene.children.length - 1; i >= 0; i--) {
+            if (scene.children[i].name === 'custom') {
                 scene.children.splice(i, 1);
             }
         }
@@ -2696,50 +2590,47 @@ define([
         selectObject(null);
         // previewMode = true;
         transformControl.detach(SELECTED);
-        if(slicingStatus.error) {
+        if (slicingStatus.error) {
             AlertActions.showPopupError('', slicingStatus.error.info, slicingStatus.error.caption);
         }
 
-        if(blobExpired) {
+        if (blobExpired) {
             console.log("Blob Expired");
-            let progress;
+            var progress = void 0;
             slicingStatus.showProgress = true;
             slicingStatus.needToCloseWait = true;
 
-            if(willReslice) {
+            if (willReslice) {
                 console.log("Will Reslice");
                 progress = lang.print.reRendering;
-                if(!slicingStatus.isComplete) {
+                if (!slicingStatus.isComplete) {
                     _showWait(progress, !showStopButton);
                 }
-            }
-            else {
+            } else {
                 console.log("Update Slice Progress");
                 updateSlicingProgressFromReport(slicingStatus.lastReport);
             }
-        }
-        else {
-            if(!printPath || printPath.length === 0) {
+        } else {
+            if (!printPath || printPath.length === 0) {
                 console.log("Getting Path");
                 _showWait(lang.print.drawingPreview, !showStopButton);
-                sliceMaster.addTask('getPath').then((result) => {
-                    if(result.error) {
+                sliceMaster.addTask('getPath').then(function (result) {
+                    if (result.error) {
                         processSlicerError(result);
                     }
                     printPath = result;
-                    _drawPath().then(() => {
+                    _drawPath().then(function () {
                         _resetPreviewLayerSlider();
                         _closeWait();
                     });
-                }).fail((error) => {
+                }).fail(function (error) {
                     processSlicerError(error);
-                }).always(() => {
+                }).always(function () {
                     _closeWait();
                 });
-            }
-            else {
+            } else {
                 console.log("Drawing Path");
-                _drawPath().then(function() {
+                _drawPath().then(function () {
                     changePreviewLayer(getCurrentPreviewLayer());
                     _closeWait();
                 });
@@ -2748,14 +2639,9 @@ define([
     }
 
     function _showWait(message, stopButton, onCloseFunction) {
-        onCloseFunction = onCloseFunction || function() {};
+        onCloseFunction = onCloseFunction || function () {};
         ProgressActions.close();
-        ProgressActions.open(
-            ProgressConstants.WAITING,
-            message,
-            '',
-            stopButton
-        );
+        ProgressActions.open(ProgressConstants.WAITING, message, '', stopButton);
     }
 
     function _closeWait() {
@@ -2764,14 +2650,16 @@ define([
 
     function _closePreview() {
         previewMode = false;
-        reactSrc.setState({ previewMode: false }, () => {
-            $('#preview').parents('label').find('input').prop('checked',false);
+        reactSrc.setState({ previewMode: false }, function () {
+            $('#preview').parents('label').find('input').prop('checked', false);
         });
         render();
     }
 
     function _drawPath() {
-        let d = $.Deferred(), lineMaterial, line;
+        var d = $.Deferred(),
+            lineMaterial = void 0,
+            line = void 0;
 
         previewScene.children.splice(1, previewScene.children.length - 1);
         lineMaterial = new THREE.LineBasicMaterial({
@@ -2781,20 +2669,20 @@ define([
             vertexColors: THREE.VertexColors
         });
 
-        for (let l = 0; l < printPath.length; l++) {
-            let g = new THREE.BufferGeometry(),
+        for (var l = 0; l < printPath.length; l++) {
+            var g = new THREE.BufferGeometry(),
                 i = 0,
                 layer = printPath[l];
 
-            let positions = new Float32Array(layer.length * 3 * 2 - 6);
-            let colors = new Float32Array(layer.length * 3 * 2 - 6);
+            var positions = new Float32Array(layer.length * 3 * 2 - 6);
+            var colors = new Float32Array(layer.length * 3 * 2 - 6);
 
-            for (let p = 1; p < layer.length; p++) {
-                for (let tmp = 1; tmp >= 0; tmp--) {
+            for (var p = 1; p < layer.length; p++) {
+                for (var tmp = 1; tmp >= 0; tmp--) {
                     positions[i * 3] = layer[p - tmp][0];
                     positions[i * 3 + 1] = layer[p - tmp][1];
                     positions[i * 3 + 2] = layer[p - tmp][2];
-                    let color = previewColors[layer[p][3]+1];
+                    var color = previewColors[layer[p][3] + 1];
                     colors[i * 3] = color.r;
                     colors[i * 3 + 1] = color.g;
                     colors[i * 3 + 2] = color.b;
@@ -2802,7 +2690,7 @@ define([
                 }
             }
 
-            g.addAttribute('position', new THREE.BufferAttribute(positions,3));
+            g.addAttribute('position', new THREE.BufferAttribute(positions, 3));
             g.addAttribute('color', new THREE.BufferAttribute(colors, 3));
             g.computeBoundingSphere();
 
@@ -2812,7 +2700,7 @@ define([
         }
         reactSrc.setState({
             previewLayerCount: previewScene.children.length - 1
-        }, function() {
+        }, function () {
             d.resolve('');
         });
         render();
@@ -2821,13 +2709,13 @@ define([
     }
 
     function _drawPathFromFCode() {
-        _drawPath().then(function() {
+        _drawPath().then(function () {
             $('#preview').parents('label').find('input').prop('checked', true);
             _closeWait();
             reactSrc.setState({
                 leftPanelReady: false,
                 previewModeOnly: true
-            }, function() {
+            }, function () {
                 // remove disable class for hover effect
                 $('#preview').parent().removeClass('disable');
             });
@@ -2850,24 +2738,24 @@ define([
         });
     }
 
-    function _targetAndZoom(mesh){
-      _orbitTargetMesh(mesh);
-      _zoomCamera(mesh);
-      setObjectDialoguePosition(mesh);
+    function _targetAndZoom(mesh) {
+        _orbitTargetMesh(mesh);
+        _zoomCamera(mesh);
+        setObjectDialoguePosition(mesh);
     }
 
     function _orbitTargetMesh(mesh) {
-      if (!$.isEmptyObject(mesh)) {
-         let x = mesh.position.x,
-             y = mesh.position.y,
-             z = mesh.position.z;
-         orbitControl.target.set(x, y, z);
-         orbitControl.update();
-      }
+        if (!$.isEmptyObject(mesh)) {
+            var x = mesh.position.x,
+                y = mesh.position.y,
+                z = mesh.position.z;
+            orbitControl.target.set(x, y, z);
+            orbitControl.update();
+        }
     }
 
     function _zoomCamera(mesh) {
-      // TODO make more efficient calculation.
+        // TODO make more efficient calculation.
         var deltaX, deltaY, deltaZ, distance, vFOV, h, fraction;
         var obSize = mesh.size;
         var refDist = Math.max(obSize.x, obSize.y, obSize.z) * 1.5;
@@ -2876,35 +2764,35 @@ define([
         orbitControl.dIn(0.1);
         orbitControl.update();
         do {
-          deltaX = camera.position.x - mesh.position.x;
-          deltaY = camera.position.y - mesh.position.y;
-          deltaZ = camera.position.z - mesh.position.z;
-          distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+            deltaX = camera.position.x - mesh.position.x;
+            deltaY = camera.position.y - mesh.position.y;
+            deltaZ = camera.position.z - mesh.position.z;
+            distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
 
-          vFOV = camera.fov * Math.PI / 180;
-          h = 2 * Math.tan( vFOV / 2 ) * distance;
-          fraction = refDist / h;
+            vFOV = camera.fov * Math.PI / 180;
+            h = 2 * Math.tan(vFOV / 2) * distance;
+            fraction = refDist / h;
 
-          orbitControl.dIn(1.2);
-          orbitControl.update();
-        } while(fraction < 0.4);
+            orbitControl.dIn(1.2);
+            orbitControl.update();
+        } while (fraction < 0.4);
     }
 
     function tester() {
-      orbitControl.dIn(1.2);
-      transformControl.setSize(transformControl.size *1.2);
-      orbitControl.update();
-      render();
+        orbitControl.dIn(1.2);
+        transformControl.setSize(transformControl.size * 1.2);
+        orbitControl.update();
+        render();
     }
 
     function _removeAllMeshOutline() {
-        objects.forEach(function(obj) {
+        objects.forEach(function (obj) {
             obj.outlineMesh.visible = false;
         });
     }
 
     function _getCameraLook(_camera) {
-        let vector = new THREE.Vector3(0, 0, -1);
+        var vector = new THREE.Vector3(0, 0, -1);
         vector.applyEuler(_camera.rotation, _camera.rotation.order);
         return vector;
     }
@@ -2915,10 +2803,7 @@ define([
         target.outlineMesh.position.x = ref.position.x;
         target.outlineMesh.position.y = ref.position.y;
 
-        setRotation(
-            Math.round(ref.rotation.enteredX),
-            Math.round(ref.rotation.enteredY),
-            Math.round(ref.rotation.enteredZ), true, target);
+        setRotation(Math.round(ref.rotation.enteredX), Math.round(ref.rotation.enteredY), Math.round(ref.rotation.enteredZ), true, target);
 
         setSize(ref.size, true, target);
 
@@ -2926,20 +2811,16 @@ define([
     }
 
     function _objectChanged(ref, src) {
-        if(!ref.size) { ref.size = {}; }
-        if(!ref.rotation) { ref.rotation = {}; }
+        if (!ref.size) {
+            ref.size = {};
+        }
+        if (!ref.rotation) {
+            ref.rotation = {};
+        }
 
-        let sizeChanged = (
-            ref.size.x !== src.size.x ||
-            ref.size.y !== src.size.y ||
-            ref.size.z !== src.size.z
-        );
+        var sizeChanged = ref.size.x !== src.size.x || ref.size.y !== src.size.y || ref.size.z !== src.size.z;
 
-        let rotationChanged = (
-            ref.rotation.enteredX !== ref.rotation.enteredX ||
-            ref.rotation.enteredY !== ref.rotation.enteredY ||
-            ref.rotation.enteredZ !== ref.rotation.enteredZ
-        );
+        var rotationChanged = ref.rotation.enteredX !== ref.rotation.enteredX || ref.rotation.enteredY !== ref.rotation.enteredY || ref.rotation.enteredZ !== ref.rotation.enteredZ;
 
         return sizeChanged || rotationChanged;
     }
@@ -2949,10 +2830,10 @@ define([
     }
 
     function _checkNeedToShowProgress() {
-        if(!slicingStatus.isComplete) {
+        if (!slicingStatus.isComplete) {
             slicingStatus.showProgress = true;
 
-            if(!!slicingStatus.lastReport) {
+            if (!!slicingStatus.lastReport) {
                 updateSlicingProgressFromReport(slicingStatus.lastReport);
             }
         }
@@ -2966,7 +2847,7 @@ define([
     }
 
     function toggleScaleLock(locked) {
-        if(SELECTED) {
+        if (SELECTED) {
             SELECTED.scale.locked = locked;
         }
     }
@@ -2976,16 +2857,19 @@ define([
     }
 
     function changeEngine(engine) {
-        let d = $.Deferred(),
+        var d = $.Deferred(),
             requireReslice = slicingStatus.inProgress;
 
-        stopSlicing().then(() => {
+        stopSlicing().then(function () {
             sliceMaster.clearTasks();
-            sliceMaster.addTask('changeEngine', engine).then((result) => {
-                if(result.error) { processSlicerError(result); }
-                else if(requireReslice) { startSlicing(); }
+            sliceMaster.addTask('changeEngine', engine).then(function (result) {
+                if (result.error) {
+                    processSlicerError(result);
+                } else if (requireReslice) {
+                    startSlicing();
+                }
                 d.resolve();
-            }).fail((error) => {
+            }).fail(function (error) {
                 processSlicerError(error);
                 d.reject(error);
             });
@@ -2995,7 +2879,7 @@ define([
     }
 
     function processSlicerError(result) {
-        let id = 'SLICER_ERROR',
+        var id = 'SLICER_ERROR',
             no_vcredist = result.error === ErrorConstants.LIBRARY_NOT_FOUND,
             message = lang.slicer.error[result.error] || result.info;
 
@@ -3003,31 +2887,29 @@ define([
             message = lang.support.no_vcredist;
             AlertActions.showPopupInfo(id, message);
             //window.open('https://flux3dp.com/downloads/');
-
         } else {
-          if (result.error == ErrorConstants.INVALID_PARAMETER) { // somehow it returns as array
-              message = `${message} ${result.info}`;
-
-          } else if (!message) {
-              message = result.error;
-
-          } else if (result.code === 1006) {
-              message = lang.slicer.error[result.code];
-          }
-          AlertActions.showPopupError(id, message);
+            if (result.error == ErrorConstants.INVALID_PARAMETER) {
+                // somehow it returns as array
+                message = message + ' ' + result.info;
+            } else if (!message) {
+                message = result.error;
+            } else if (result.code === 1006) {
+                message = lang.slicer.error[result.code];
+            }
+            AlertActions.showPopupError(id, message);
         }
     }
 
     function allOutOfBound() {
-        return !objects.some((o) => {
+        return !objects.some(function (o) {
             return !o.position.isOutOfBounds;
         });
     }
 
     function addPoint(p) {
-        let g = new THREE.BoxGeometry(1,1,1);
-        let m = new THREE.MeshBasicMaterial({ color: 0x444444 });
-        let cube = new THREE.Mesh(g, m);
+        var g = new THREE.BoxGeometry(1, 1, 1);
+        var m = new THREE.MeshBasicMaterial({ color: 0x444444 });
+        var cube = new THREE.Mesh(g, m);
         cube.position.x = p.x;
         cube.position.y = p.y;
         cube.position.z = 0.5;
@@ -3036,66 +2918,66 @@ define([
         render();
     }
 
-    function getMousePosition( dom, x, y ) {
-        let rect = dom.getBoundingClientRect();
-        return [ ( x - rect.left ) / rect.width, ( y - rect.top ) / rect.height ];
+    function getMousePosition(dom, x, y) {
+        var rect = dom.getBoundingClientRect();
+        return [(x - rect.left) / rect.width, (y - rect.top) / rect.height];
     }
 
-    function getIntersects( point, o ) {
-        mouse.set( ( point.x * 2 ) - 1, - ( point.y * 2 ) + 1 );
-        raycaster.setFromCamera( mouse, camera );
-        return raycaster.intersectObjects( o );
+    function getIntersects(point, o) {
+        mouse.set(point.x * 2 - 1, -(point.y * 2) + 1);
+        raycaster.setFromCamera(mouse, camera);
+        return raycaster.intersectObjects(o);
     };
 
     function getBoundingBox(obj) {
-        let box3 = new THREE.Box3(),
+        var box3 = new THREE.Box3(),
             size = new THREE.Vector3();
 
-        let boundingBox = new THREE.BoxHelper(obj);
+        var boundingBox = new THREE.BoxHelper(obj);
         box3.setFromObject(boundingBox);
         box3.getSize(size);
-        return { box: box3, size };
+        return { box: box3, size: size };
     }
 
-    let printControl = {
-        alignCenterPosition : alignCenterPosition,
-        init                : init,
-        appendModel         : appendModel,
-        appendModels        : appendModels,
-        setRotation         : setRotation,
-        setScale            : setScale,
-        alignCenter         : alignCenter,
-        removeSelected      : removeSelected,
-        duplicateSelected   : duplicateSelected,
-        setSize             : setSize,
-        downloadFCode       : downloadFCode,
-        setRotateMode       : setRotateMode,
-        setScaleMode        : setScaleMode,
-        setAdvanceParameter : setAdvanceParameter,
-        setParameter        : setParameter,
-        setParameters       : setParameters,
-        getFCode            : getFCode,
-        getModelCount       : getModelCount,
-        togglePreview       : togglePreview,
-        changePreviewLayer  : changePreviewLayer,
-        setCameraPosition   : setCameraPosition,
-        clearSelection      : clearSelection,
-        clear               : clear,
-        toggleScaleLock     : toggleScaleLock,
-        getSlicingStatus    : getSlicingStatus,
-        cancelPreview       : cancelPreview,
-        doFCodeImport       : doFCodeImport,
-        willUnmount         : willUnmount,
-        downloadScene       : downloadScene,
-        loadScene           : loadScene,
-        undo                : undo,
-        addHistory          : addHistory,
-        clearScene          : clearScene,
-        changeEngine        : changeEngine,
-        takeSnapShot        : takeSnapShot,
-        tester              : tester,
-        startSlicing        : startSlicing,
-        resetObject         : resetObject
+    var printControl = {
+        alignCenterPosition: alignCenterPosition,
+        init: init,
+        appendModel: appendModel,
+        appendModels: appendModels,
+        setRotation: setRotation,
+        setScale: setScale,
+        alignCenter: alignCenter,
+        removeSelected: removeSelected,
+        duplicateSelected: duplicateSelected,
+        setSize: setSize,
+        downloadFCode: downloadFCode,
+        setRotateMode: setRotateMode,
+        setScaleMode: setScaleMode,
+        setAdvanceParameter: setAdvanceParameter,
+        setParameter: setParameter,
+        setParameters: setParameters,
+        getFCode: getFCode,
+        getModelCount: getModelCount,
+        togglePreview: togglePreview,
+        changePreviewLayer: changePreviewLayer,
+        setCameraPosition: setCameraPosition,
+        clearSelection: clearSelection,
+        clear: clear,
+        toggleScaleLock: toggleScaleLock,
+        getSlicingStatus: getSlicingStatus,
+        cancelPreview: cancelPreview,
+        doFCodeImport: doFCodeImport,
+        willUnmount: willUnmount,
+        downloadScene: downloadScene,
+        loadScene: loadScene,
+        undo: undo,
+        addHistory: addHistory,
+        clearScene: clearScene,
+        changeEngine: changeEngine,
+        takeSnapShot: takeSnapShot,
+        tester: tester,
+        startSlicing: startSlicing,
+        resetObject: resetObject
     };
     return printControl;
 });

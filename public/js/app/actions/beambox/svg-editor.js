@@ -1,3 +1,7 @@
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 /*globals svgEditor:true, globalStorage, widget, svgedit, canvg, jQuery, $, DOMParser, FileReader */
 /*jslint vars: true, eqeq: true, todo: true, forin: true, continue: true, regexp: true */
 /*
@@ -22,45 +26,13 @@
 TODOS
 1. JSDoc
 */
-define([
-    'react',
-    'jsx!app/actions/beambox/Object-Panels-Controller',
-    'jsx!app/actions/beambox/Laser-Panel-Controller',
-    'app/actions/beambox/preview-mode-controller',
-    'jsx!app/actions/announcement',
-    'jsx!app/views/beambox/DxfDpiSelector',
-    'app/actions/alert-actions',
-    'app/actions/topbar',
-    'helpers/image-data',
-    'helpers/shortcuts',
-    'helpers/i18n',
-    'app/actions/beambox/constant',
-    'helpers/dxf2svg',
-    'app/constants/keycode-constants',
-    'helpers/api/svg-laser-parser'
-], function (
-    React,
-    ObjectPanelsController,
-    LaserPanelController,
-    PreviewModeController,
-    Announcement,
-    DxfDpiSelector,
-    AlertActions,
-    TopbarActions,
-    ImageData,
-    Shortcuts,
-    i18n,
-    Constant,
-    Dxf2Svg,
-    KeycodeConstants,
-    SvgLaserParser
-) {
-    const LANG = i18n.lang.beambox;
-    const svgWebSocket = SvgLaserParser({ type: 'svgeditor' });
+define(['react', 'jsx!app/actions/beambox/Object-Panels-Controller', 'jsx!app/actions/beambox/Laser-Panel-Controller', 'app/actions/beambox/preview-mode-controller', 'jsx!app/actions/announcement', 'jsx!app/views/beambox/DxfDpiSelector', 'app/actions/alert-actions', 'app/actions/topbar', 'helpers/image-data', 'helpers/shortcuts', 'helpers/i18n', 'app/actions/beambox/constant', 'helpers/dxf2svg', 'app/constants/keycode-constants', 'helpers/api/svg-laser-parser'], function (React, ObjectPanelsController, LaserPanelController, PreviewModeController, Announcement, DxfDpiSelector, AlertActions, TopbarActions, ImageData, Shortcuts, i18n, Constant, Dxf2Svg, KeycodeConstants, SvgLaserParser) {
+    var LANG = i18n.lang.beambox;
+    var svgWebSocket = SvgLaserParser({ type: 'svgeditor' });
     if (window.svgEditor) {
         return;
     }
-    window.svgEditor = (function ($) {
+    window.svgEditor = function ($) {
         var editor = {};
         // EDITOR PROPERTIES: (defined below)
         //		curPrefs, curConfig, canvas, storage, uiStrings
@@ -73,169 +45,161 @@ define([
         editor.storagePromptClosed = false; // For use with ext-storage.js
         editor.dimensions = [Constant.dimension.width, Constant.dimension.height];
 
-        var svgCanvas, urldata,
+        var svgCanvas,
+            urldata,
             Utils = svgedit.utilities,
             isReady = false,
             customExportImage = false,
             customExportPDF = false,
             callbacks = [],
-            /**
-                 * PREFS AND CONFIG
-                 */
-            // The iteration algorithm for defaultPrefs does not currently support array/objects
-            defaultPrefs = {
-                // EDITOR OPTIONS (DIALOG)
-                lang: (i18n.getActiveLang() === 'en') ? 'en' : 'zh-TW', // Default to "en" if locale.js detection does not detect another language
-                iconsize: '', // Will default to 's' if the window height is smaller than the minimum height and 'm' otherwise
-                bkgd_color: '#FFF',
-                bkgd_url: '',
-                // DOCUMENT PROPERTIES (DIALOG)
-                img_save: 'embed',
-                // ALERT NOTICES
-                // Only shows in UI as far as alert notices, but useful to remember, so keeping as pref
-                save_notice_done: false,
-                export_notice_done: false
-            },
+
+        /**
+             * PREFS AND CONFIG
+             */
+        // The iteration algorithm for defaultPrefs does not currently support array/objects
+        defaultPrefs = {
+            // EDITOR OPTIONS (DIALOG)
+            lang: i18n.getActiveLang() === 'en' ? 'en' : 'zh-TW', // Default to "en" if locale.js detection does not detect another language
+            iconsize: '', // Will default to 's' if the window height is smaller than the minimum height and 'm' otherwise
+            bkgd_color: '#FFF',
+            bkgd_url: '',
+            // DOCUMENT PROPERTIES (DIALOG)
+            img_save: 'embed',
+            // ALERT NOTICES
+            // Only shows in UI as far as alert notices, but useful to remember, so keeping as pref
+            save_notice_done: false,
+            export_notice_done: false
+        },
             curPrefs = {},
-            // Note: The difference between Prefs and Config is that Prefs
-            //   can be changed in the UI and are stored in the browser,
-            //   while config cannot
-            curConfig = {
-                // We do not put on defaultConfig to simplify object copying
-                //   procedures (we obtain instead from defaultExtensions)
-                extensions: [],
-                /**
-                     * Can use window.location.origin to indicate the current
-                     * origin. Can contain a '*' to allow all domains or 'null' (as
-                     * a string) to support all file:// URLs. Cannot be set by
-                     * URL for security reasons (not safe, at least for
-                     * privacy or data integrity of SVG content).
-                     * Might have been fairly safe to allow
-                     *   `new URL(window.location.href).origin` by default but
-                     *   avoiding it ensures some more security that even third
-                     *   party apps on the same domain also cannot communicate
-                     *   with this app by default.
-                     * For use with ext-xdomain-messaging.js
-                     * @todo We might instead make as a user-facing preference.
-                     */
-                allowedOrigins: []
-            },
-            defaultExtensions = [
-                'ext-rotary_mode.js',
-                'ext-overview_window.js',
-                'ext-markers.js',
-                'ext-connector.js',
-                'ext-shapes.js',
-                'ext-imagelib.js',
-                'ext-grid.js',
-                'ext-polygon.js',
-                'ext-star.js',
-                'ext-panning.js',
-                'ext-multiselect.js',
-                // 'ext-storage.js',
-                // 'ext-eyedropper.js',
-                'ext-closepath.js',
-            ],
-            defaultConfig = {
-                // Todo: svgcanvas.js also sets and checks: show_outside_canvas, selectNew; add here?
-                // Change the following to preferences and add pref controls to the UI (e.g., initTool, wireframe, showlayers)?
-                canvasName: 'default',
-                canvas_expansion: 3,
-                initFill: {
-                    color: 'FFFFFF',
-                    opacity: 0
-                },
-                initStroke: {
-                    width: 1,
-                    color: '000000', // solid black
-                    opacity: 1
-                },
-                text: {
-                    stroke_width: 1,
-                    font_size: 100,
-                    font_family: 'Arial',
-                    fill: '#fff',
-                    fill_opacity: '0',
-                    text_anchor: 'start'
-                },
-                initOpacity: 1,
-                colorPickerCSS: null, // Defaults to 'left' with a position equal to that of the fill_color or stroke_color element minus 140, and a 'bottom' equal to 40
-                initTool: 'select',
-                exportWindowType: 'new', // 'same' (todo: also support 'download')
-                wireframe: true,
-                showlayers: true,
-                no_save_warning: true,
-                // PATH CONFIGURATION
-                // The following path configuration items are disallowed in the URL (as should any future path configurations)
-                imgPath: 'js/lib/svgeditor/images/',
-                langPath: 'js/lib/svgeditor/locale/',
-                extPath: 'js/lib/svgeditor/extensions/',
-                jGraduatePath: 'js/lib/svgeditor/jgraduate/images/',
-                // DOCUMENT PROPERTIES
-                // Change the following to a preference (already in the Document Properties dialog)?
-                dimensions: editor.dimensions,
-                // EDITOR OPTIONS
-                // Change the following to preferences (already in the Editor Options dialog)?
-                gridSnapping: false,
-                gridColor: 'rgba(0,0,0,0.18)',
-                baseUnit: 'px',
-                snappingStep: 10,
-                showRulers: true,
-                // URL BEHAVIOR CONFIGURATION
-                preventAllURLConfig: true,
-                preventURLContentLoading: true,
-                // EXTENSION CONFIGURATION (see also preventAllURLConfig)
-                lockExtensions: false, // Disallowed in URL setting
-                noDefaultExtensions: false, // noDefaultExtensions can only be meaningfully used in config.js or in the URL
-                // EXTENSION-RELATED (GRID)
-                showGrid: true, // Set by ext-grid.js
-                // EXTENSION-RELATED (STORAGE)
-                noStorageOnLoad: false, // Some interaction with ext-storage.js; prevent even the loading of previously saved local storage
-                forceStorage: false, // Some interaction with ext-storage.js; strongly discouraged from modification as it bypasses user privacy by preventing them from choosing whether to keep local storage or not
-                emptyStorageOnDecline: false // Used by ext-storage.js; empty any prior storage if the user declines to store
-            },
+
+        // Note: The difference between Prefs and Config is that Prefs
+        //   can be changed in the UI and are stored in the browser,
+        //   while config cannot
+        curConfig = {
+            // We do not put on defaultConfig to simplify object copying
+            //   procedures (we obtain instead from defaultExtensions)
+            extensions: [],
             /**
-                 * LOCALE
-                 * @todo Can we remove now that we are always loading even English? (unless locale is set to null)
+                 * Can use window.location.origin to indicate the current
+                 * origin. Can contain a '*' to allow all domains or 'null' (as
+                 * a string) to support all file:// URLs. Cannot be set by
+                 * URL for security reasons (not safe, at least for
+                 * privacy or data integrity of SVG content).
+                 * Might have been fairly safe to allow
+                 *   `new URL(window.location.href).origin` by default but
+                 *   avoiding it ensures some more security that even third
+                 *   party apps on the same domain also cannot communicate
+                 *   with this app by default.
+                 * For use with ext-xdomain-messaging.js
+                 * @todo We might instead make as a user-facing preference.
                  */
-            uiStrings = editor.uiStrings = {
-                common: {
-                    ok: 'OK',
-                    cancel: 'Cancel',
-                    key_up: 'Up',
-                    key_down: 'Down',
-                    key_backspace: 'Backspace',
-                    key_del: 'Del'
-                },
-                // This is needed if the locale is English, since the locale strings are not read in that instance.
-                layers: {
-                    layer: 'Layer'
-                },
-                notification: {
-                    invalidAttrValGiven: 'Invalid value given',
-                    noContentToFitTo: 'No content to fit to',
-                    dupeLayerName: 'There is already a layer named that!',
-                    enterUniqueLayerName: 'Please enter a unique layer name',
-                    enterNewLayerName: 'Please enter the new layer name',
-                    layerHasThatName: 'Layer already has that name',
-                    QmoveElemsToLayer: 'Move selected elements to layer \'%s\'?',
-                    QwantToClear: 'Do you want to clear the drawing?\nThis will also erase your undo history!',
-                    QwantToOpen: 'Do you want to open a new file?\nThis will also erase your undo history!',
-                    QerrorsRevertToSource: 'There were parsing errors in your SVG source.\nRevert back to original SVG source?',
-                    QignoreSourceChanges: 'Ignore changes made to SVG source?',
-                    featNotSupported: 'Feature not supported',
-                    enterNewImgURL: 'Enter the new image URL',
-                    defsFailOnSave: 'NOTE: Due to a bug in your browser, this image may appear wrong (missing gradients or elements). It will however appear correct once actually saved.',
-                    loadingImage: 'Loading image, please wait...',
-                    saveFromBrowser: 'Select \'Save As...\' in your browser to save this image as a %s file.',
-                    noteTheseIssues: 'Also note the following issues: ',
-                    unsavedChanges: 'There are unsaved changes.',
-                    enterNewLinkURL: 'Enter the new hyperlink URL',
-                    errorLoadingSVG: 'Error: Unable to load SVG data',
-                    URLloadFail: 'Unable to load from URL',
-                    retrieving: 'Retrieving \'%s\' ...'
-                }
-            };
+            allowedOrigins: []
+        },
+            defaultExtensions = ['ext-rotary_mode.js', 'ext-overview_window.js', 'ext-markers.js', 'ext-connector.js', 'ext-shapes.js', 'ext-imagelib.js', 'ext-grid.js', 'ext-polygon.js', 'ext-star.js', 'ext-panning.js', 'ext-multiselect.js',
+        // 'ext-storage.js',
+        // 'ext-eyedropper.js',
+        'ext-closepath.js'],
+            defaultConfig = {
+            // Todo: svgcanvas.js also sets and checks: show_outside_canvas, selectNew; add here?
+            // Change the following to preferences and add pref controls to the UI (e.g., initTool, wireframe, showlayers)?
+            canvasName: 'default',
+            canvas_expansion: 3,
+            initFill: {
+                color: 'FFFFFF',
+                opacity: 0
+            },
+            initStroke: {
+                width: 1,
+                color: '000000', // solid black
+                opacity: 1
+            },
+            text: {
+                stroke_width: 1,
+                font_size: 100,
+                font_family: 'Arial',
+                fill: '#fff',
+                fill_opacity: '0',
+                text_anchor: 'start'
+            },
+            initOpacity: 1,
+            colorPickerCSS: null, // Defaults to 'left' with a position equal to that of the fill_color or stroke_color element minus 140, and a 'bottom' equal to 40
+            initTool: 'select',
+            exportWindowType: 'new', // 'same' (todo: also support 'download')
+            wireframe: true,
+            showlayers: true,
+            no_save_warning: true,
+            // PATH CONFIGURATION
+            // The following path configuration items are disallowed in the URL (as should any future path configurations)
+            imgPath: 'js/lib/svgeditor/images/',
+            langPath: 'js/lib/svgeditor/locale/',
+            extPath: 'js/lib/svgeditor/extensions/',
+            jGraduatePath: 'js/lib/svgeditor/jgraduate/images/',
+            // DOCUMENT PROPERTIES
+            // Change the following to a preference (already in the Document Properties dialog)?
+            dimensions: editor.dimensions,
+            // EDITOR OPTIONS
+            // Change the following to preferences (already in the Editor Options dialog)?
+            gridSnapping: false,
+            gridColor: 'rgba(0,0,0,0.18)',
+            baseUnit: 'px',
+            snappingStep: 10,
+            showRulers: true,
+            // URL BEHAVIOR CONFIGURATION
+            preventAllURLConfig: true,
+            preventURLContentLoading: true,
+            // EXTENSION CONFIGURATION (see also preventAllURLConfig)
+            lockExtensions: false, // Disallowed in URL setting
+            noDefaultExtensions: false, // noDefaultExtensions can only be meaningfully used in config.js or in the URL
+            // EXTENSION-RELATED (GRID)
+            showGrid: true, // Set by ext-grid.js
+            // EXTENSION-RELATED (STORAGE)
+            noStorageOnLoad: false, // Some interaction with ext-storage.js; prevent even the loading of previously saved local storage
+            forceStorage: false, // Some interaction with ext-storage.js; strongly discouraged from modification as it bypasses user privacy by preventing them from choosing whether to keep local storage or not
+            emptyStorageOnDecline: false // Used by ext-storage.js; empty any prior storage if the user declines to store
+        },
+
+        /**
+             * LOCALE
+             * @todo Can we remove now that we are always loading even English? (unless locale is set to null)
+             */
+        uiStrings = editor.uiStrings = {
+            common: {
+                ok: 'OK',
+                cancel: 'Cancel',
+                key_up: 'Up',
+                key_down: 'Down',
+                key_backspace: 'Backspace',
+                key_del: 'Del'
+            },
+            // This is needed if the locale is English, since the locale strings are not read in that instance.
+            layers: {
+                layer: 'Layer'
+            },
+            notification: {
+                invalidAttrValGiven: 'Invalid value given',
+                noContentToFitTo: 'No content to fit to',
+                dupeLayerName: 'There is already a layer named that!',
+                enterUniqueLayerName: 'Please enter a unique layer name',
+                enterNewLayerName: 'Please enter the new layer name',
+                layerHasThatName: 'Layer already has that name',
+                QmoveElemsToLayer: 'Move selected elements to layer \'%s\'?',
+                QwantToClear: 'Do you want to clear the drawing?\nThis will also erase your undo history!',
+                QwantToOpen: 'Do you want to open a new file?\nThis will also erase your undo history!',
+                QerrorsRevertToSource: 'There were parsing errors in your SVG source.\nRevert back to original SVG source?',
+                QignoreSourceChanges: 'Ignore changes made to SVG source?',
+                featNotSupported: 'Feature not supported',
+                enterNewImgURL: 'Enter the new image URL',
+                defsFailOnSave: 'NOTE: Due to a bug in your browser, this image may appear wrong (missing gradients or elements). It will however appear correct once actually saved.',
+                loadingImage: 'Loading image, please wait...',
+                saveFromBrowser: 'Select \'Save As...\' in your browser to save this image as a %s file.',
+                noteTheseIssues: 'Also note the following issues: ',
+                unsavedChanges: 'There are unsaved changes.',
+                enterNewLinkURL: 'Enter the new hyperlink URL',
+                errorLoadingSVG: 'Error: Unable to load SVG data',
+                URLloadFail: 'Unable to load from URL',
+                retrieving: 'Retrieving \'%s\' ...'
+            }
+        };
 
         function loadSvgString(str, callback) {
             var success = svgCanvas.setSvgString(str) !== false;
@@ -271,7 +235,7 @@ define([
                 editor.curPrefs = curPrefs; // Update exported value
                 return;
             }
-            return (key in curPrefs) ? curPrefs[key] : defaultPrefs[key];
+            return key in curPrefs ? curPrefs[key] : defaultPrefs[key];
         };
 
         /**
@@ -299,9 +263,8 @@ define([
             }
 
             // LOAD CONTENT
-            if (editor.storage && // Cookies do not have enough available memory to hold large documents
-                    (curConfig.forceStorage || (!curConfig.noStorageOnLoad && document.cookie.match(/(?:^|;\s*)store=prefsAndContent/)))
-            ) {
+            if (editor.storage && ( // Cookies do not have enough available memory to hold large documents
+            curConfig.forceStorage || !curConfig.noStorageOnLoad && document.cookie.match(/(?:^|;\s*)store=prefsAndContent/))) {
                 var name = 'svgedit-' + curConfig.canvasName;
                 var cached = editor.storage.getItem(name);
                 if (cached) {
@@ -312,7 +275,8 @@ define([
             // LOAD PREFS
             var key;
             for (key in defaultPrefs) {
-                if (defaultPrefs.hasOwnProperty(key)) { // It's our own config, so we don't need to iterate up the prototype chain
+                if (defaultPrefs.hasOwnProperty(key)) {
+                    // It's our own config, so we don't need to iterate up the prototype chain
                     var storeKey = 'svg-edit-' + key;
                     if (editor.storage) {
                         var val = editor.storage.getItem(storeKey);
@@ -351,7 +315,7 @@ define([
             cfgCfg = cfgCfg || {};
 
             function extendOrAdd(cfgObj, key, val) {
-                if (cfgObj[key] && typeof cfgObj[key] === 'object') {
+                if (cfgObj[key] && _typeof(cfgObj[key]) === 'object') {
                     $.extend(true, cfgObj[key], val);
                 } else {
                     cfgObj[key] = val;
@@ -362,10 +326,7 @@ define([
                 if (opts.hasOwnProperty(key)) {
                     // Only allow prefs defined in defaultPrefs
                     if (defaultPrefs.hasOwnProperty(key)) {
-                        if (cfgCfg.overwrite === false && (
-                            curConfig.preventAllURLConfig ||
-                                curPrefs.hasOwnProperty(key)
-                        )) {
+                        if (cfgCfg.overwrite === false && (curConfig.preventAllURLConfig || curPrefs.hasOwnProperty(key))) {
                             return;
                         }
                         if (cfgCfg.allowInitialUserOverride === true) {
@@ -374,44 +335,35 @@ define([
                             $.pref(key, val);
                         }
                     } else if (['extensions', 'allowedOrigins'].indexOf(key) > -1) {
-                        if (cfgCfg.overwrite === false &&
-                                (
-                                    curConfig.preventAllURLConfig ||
-                                    key === 'allowedOrigins' ||
-                                    (key === 'extensions' && curConfig.lockExtensions)
-                                )
-                        ) {
+                        if (cfgCfg.overwrite === false && (curConfig.preventAllURLConfig || key === 'allowedOrigins' || key === 'extensions' && curConfig.lockExtensions)) {
                             return;
                         }
                         curConfig[key] = curConfig[key].concat(val); // We will handle any dupes later
                     }
                     // Only allow other curConfig if defined in defaultConfig
                     else if (defaultConfig.hasOwnProperty(key)) {
-                        if (cfgCfg.overwrite === false && (
-                            curConfig.preventAllURLConfig ||
-                                curConfig.hasOwnProperty(key)
-                        )) {
-                            return;
-                        }
-                        // Potentially overwriting of previously set config
-                        if (curConfig.hasOwnProperty(key)) {
-                            if (cfgCfg.overwrite === false) {
+                            if (cfgCfg.overwrite === false && (curConfig.preventAllURLConfig || curConfig.hasOwnProperty(key))) {
                                 return;
                             }
-                            extendOrAdd(curConfig, key, val);
-                        } else {
-                            if (cfgCfg.allowInitialUserOverride === true) {
-                                extendOrAdd(defaultConfig, key, val);
+                            // Potentially overwriting of previously set config
+                            if (curConfig.hasOwnProperty(key)) {
+                                if (cfgCfg.overwrite === false) {
+                                    return;
+                                }
+                                extendOrAdd(curConfig, key, val);
                             } else {
-                                if (defaultConfig[key] && typeof defaultConfig[key] === 'object') {
-                                    curConfig[key] = {};
-                                    $.extend(true, curConfig[key], val); // Merge properties recursively, e.g., on initFill, initStroke objects
+                                if (cfgCfg.allowInitialUserOverride === true) {
+                                    extendOrAdd(defaultConfig, key, val);
                                 } else {
-                                    curConfig[key] = val;
+                                    if (defaultConfig[key] && _typeof(defaultConfig[key]) === 'object') {
+                                        curConfig[key] = {};
+                                        $.extend(true, curConfig[key], val); // Merge properties recursively, e.g., on initFill, initStroke objects
+                                    } else {
+                                        curConfig[key] = val;
+                                    }
                                 }
                             }
                         }
-                    }
                 }
             });
             editor.curConfig = curConfig; // Update exported value
@@ -466,10 +418,13 @@ define([
             //	onWeb = host && host.indexOf('.') >= 0;
             // Some FF versions throw security errors here when directly accessing
             try {
-                if ('localStorage' in window) { // && onWeb removed so Webkit works locally
+                if ('localStorage' in window) {
+                    // && onWeb removed so Webkit works locally
                     editor.storage = localStorage;
                 }
-            } catch (err) { console.log(e); }
+            } catch (err) {
+                console.log(e);
+            }
 
             // Todo: Avoid var-defined functions and group functions together, etc. where possible
             var good_langs = [];
@@ -521,17 +476,11 @@ define([
                     // security reasons, even for same-domain
                     // ones given potential to interact in undesirable
                     // ways with other script resources
-                    $.each(
-                        [
-                            'extPath', 'imgPath',
-                            'langPath', 'jGraduatePath'
-                        ],
-                        function (pathConfig) {
-                            if (urldata[pathConfig]) {
-                                delete urldata[pathConfig];
-                            }
+                    $.each(['extPath', 'imgPath', 'langPath', 'jGraduatePath'], function (pathConfig) {
+                        if (urldata[pathConfig]) {
+                            delete urldata[pathConfig];
                         }
-                    );
+                    });
 
                     editor.setConfig(urldata, {
                         overwrite: false
@@ -542,7 +491,8 @@ define([
                     if (!curConfig.preventURLContentLoading) {
                         src = urldata.source;
                         qstr = $.param.querystring();
-                        if (!src) { // urldata.source may have been null if it ended with '='
+                        if (!src) {
+                            // urldata.source may have been null if it ended with '='
                             if (qstr.indexOf('source=data:') >= 0) {
                                 src = qstr.match(/source=(data:[^&]*)/)[1];
                             }
@@ -572,7 +522,7 @@ define([
             })();
 
             var setIcon = editor.setIcon = function (elem, icon_id, forcedSize) {
-                var icon = (typeof icon_id === 'string') ? $.getSvgIcon(icon_id, true) : icon_id.clone();
+                var icon = typeof icon_id === 'string' ? $.getSvgIcon(icon_id, true) : icon_id.clone();
                 if (!icon) {
                     console.log('NOTE: Icon image missing: ' + icon_id);
                     return;
@@ -580,10 +530,11 @@ define([
                 $(elem).empty().append(icon);
             };
 
-            var extFunc = function () {
+            var extFunc = function extFunc() {
                 $.each(curConfig.extensions, function () {
                     var extname = this;
-                    if (!extname.match(/^ext-.*\.js/)) { // Ensure URL cannot specify some other unintended file in the extPath
+                    if (!extname.match(/^ext-.*\.js/)) {
+                        // Ensure URL cannot specify some other unintended file in the extPath
                         return;
                     }
                     $.getScript(curConfig.extPath + extname, function (d) {
@@ -602,8 +553,8 @@ define([
                 editor.putLocale(null, good_langs);
             };
 
-                // Load extensions
-                // Bit of a hack to run extensions in local Opera/IE9
+            // Load extensions
+            // Bit of a hack to run extensions in local Opera/IE9
             if (document.location.protocol === 'file:') {
                 setTimeout(extFunc, 100);
             } else {
@@ -762,7 +713,7 @@ define([
                     '.stroke_tool div div .svg_icon': 20,
                     '#tools_bottom label .svg_icon': 18
                 },
-                callback: function (icons) {
+                callback: function callback(icons) {
                     $('.toolbar_button button > svg, .toolbar_button button > img').each(function () {
                         $(this).parent().prepend(this);
                     });
@@ -801,37 +752,32 @@ define([
             });
 
             editor.canvas = svgCanvas = new $.SvgCanvas(document.getElementById('svgcanvas'), curConfig);
-            var supportsNonSS, resize_timer, Actions, curScrollPos,
-                palette = [ // Todo: Make into configuration item?
-                    '#000000', '#3f3f3f', '#7f7f7f', '#bfbfbf', '#ffffff',
-                    '#ff0000', '#ff7f00', '#ffff00', '#7fff00',
-                    '#00ff00', '#00ff7f', '#00ffff', '#007fff',
-                    '#0000ff', '#7f00ff', '#ff00ff', '#ff007f',
-                    '#7f0000', '#7f3f00', '#7f7f00', '#3f7f00',
-                    '#007f00', '#007f3f', '#007f7f', '#003f7f',
-                    '#00007f', '#3f007f', '#7f007f', '#7f003f',
-                    '#ffaaaa', '#ffd4aa', '#ffffaa', '#d4ffaa',
-                    '#aaffaa', '#aaffd4', '#aaffff', '#aad4ff',
-                    '#aaaaff', '#d4aaff', '#ffaaff', '#ffaad4'
-                ],
-                modKey = (svgedit.browser.isMac() ? 'meta+' : 'ctrl+'), // ⌘
-                path = svgCanvas.pathActions,
+            var supportsNonSS,
+                resize_timer,
+                Actions,
+                curScrollPos,
+                palette = [// Todo: Make into configuration item?
+            '#000000', '#3f3f3f', '#7f7f7f', '#bfbfbf', '#ffffff', '#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#00ff7f', '#00ffff', '#007fff', '#0000ff', '#7f00ff', '#ff00ff', '#ff007f', '#7f0000', '#7f3f00', '#7f7f00', '#3f7f00', '#007f00', '#007f3f', '#007f7f', '#003f7f', '#00007f', '#3f007f', '#7f007f', '#7f003f', '#ffaaaa', '#ffd4aa', '#ffffaa', '#d4ffaa', '#aaffaa', '#aaffd4', '#aaffff', '#aad4ff', '#aaaaff', '#d4aaff', '#ffaaff', '#ffaad4'],
+                modKey = svgedit.browser.isMac() ? 'meta+' : 'ctrl+',
+                // ⌘
+            path = svgCanvas.pathActions,
                 undoMgr = svgCanvas.undoMgr,
                 defaultImageURL = curConfig.imgPath + 'logo.png',
                 workarea = $('#workarea'),
                 canv_menu = $('#cmenu_canvas'),
-                // layer_menu = $('#cmenu_layers'), // Unused
-                exportWindow = null,
+
+            // layer_menu = $('#cmenu_layers'), // Unused
+            exportWindow = null,
                 zoomInIcon = 'crosshair',
                 zoomOutIcon = 'crosshair',
                 ui_context = 'toolbars',
                 origSource = '',
                 paintBox = {
-                    fill: null,
-                    stroke: null
-                };
+                fill: null,
+                stroke: null
+            };
 
-                // For external openers
+            // For external openers
             (function () {
                 // let the opener know SVG Edit is ready (now that config is set up)
                 var svgEditorReadyEvent,
@@ -841,7 +787,9 @@ define([
                         svgEditorReadyEvent = w.document.createEvent('Event');
                         svgEditorReadyEvent.initEvent('svgEditorReady', true, true);
                         w.document.documentElement.dispatchEvent(svgEditorReadyEvent);
-                    } catch (e) { console.log(e); }
+                    } catch (e) {
+                        console.log(e);
+                    }
                 }
             })();
 
@@ -858,83 +806,80 @@ define([
                 var box = $('#dialog_box'),
                     btn_holder = $('#dialog_buttons'),
                     dialog_content = $('#dialog_content'),
-                    dbox = function (type, msg, callback, defaultVal, opts, changeCb, checkbox) {
-                        var ok, ctrl, chkbx;
-                        dialog_content.html('<p>' + msg.replace(/\n/g, '</p><p>') + '</p>')
-                            .toggleClass('prompt', (type === 'prompt'));
-                        btn_holder.empty();
+                    dbox = function dbox(type, msg, callback, defaultVal, opts, changeCb, checkbox) {
+                    var ok, ctrl, chkbx;
+                    dialog_content.html('<p>' + msg.replace(/\n/g, '</p><p>') + '</p>').toggleClass('prompt', type === 'prompt');
+                    btn_holder.empty();
 
-                        ok = $('<input type="button" value="' + uiStrings.common.ok + '">').appendTo(btn_holder);
+                    ok = $('<input type="button" value="' + uiStrings.common.ok + '">').appendTo(btn_holder);
 
-                        if (type !== 'alert') {
-                            $('<input type="button" value="' + uiStrings.common.cancel + '">')
-                                .appendTo(btn_holder)
-                                .click(function () {
-                                    box.hide();
-                                    if (callback) {
-                                        callback(false);
-                                    }
-                                });
-                        }
-
-                        if (type === 'prompt') {
-                            ctrl = $('<input type="text">').prependTo(btn_holder);
-                            ctrl.val(defaultVal || '');
-                            ctrl.bind('keydown', 'return', function () {
-                                ok.click();
-                            });
-                        } else if (type === 'select') {
-                            var div = $('<div style="text-align:center;">');
-                            ctrl = $('<select>').appendTo(div);
-                            if (checkbox) {
-                                var label = $('<label>').text(checkbox.label);
-                                chkbx = $('<input type="checkbox">').appendTo(label);
-                                chkbx.val(checkbox.value);
-                                if (checkbox.tooltip) {
-                                    label.attr('title', checkbox.tooltip);
-                                }
-                                chkbx.prop('checked', !!checkbox.checked);
-                                div.append($('<div>').append(label));
-                            }
-                            $.each(opts || [], function (opt, val) {
-                                if (typeof val === 'object') {
-                                    ctrl.append($('<option>').val(val.value).html(val.text));
-                                } else {
-                                    ctrl.append($('<option>').html(val));
-                                }
-                            });
-                            dialog_content.append(div);
-                            if (defaultVal) {
-                                ctrl.val(defaultVal);
-                            }
-                            if (changeCb) {
-                                ctrl.bind('change', 'return', changeCb);
-                            }
-                            ctrl.bind('keydown', 'return', function () {
-                                ok.click();
-                            });
-                        } else if (type === 'process') {
-                            ok.hide();
-                        }
-
-                        box.show();
-
-                        ok.click(function () {
+                    if (type !== 'alert') {
+                        $('<input type="button" value="' + uiStrings.common.cancel + '">').appendTo(btn_holder).click(function () {
                             box.hide();
-                            var resp = (type === 'prompt' || type === 'select') ? ctrl.val() : true;
                             if (callback) {
-                                if (chkbx) {
-                                    callback(resp, chkbx.prop('checked'));
-                                } else {
-                                    callback(resp);
-                                }
+                                callback(false);
                             }
-                        }).focus();
+                        });
+                    }
 
-                        if (type === 'prompt' || type === 'select') {
-                            ctrl.focus();
+                    if (type === 'prompt') {
+                        ctrl = $('<input type="text">').prependTo(btn_holder);
+                        ctrl.val(defaultVal || '');
+                        ctrl.bind('keydown', 'return', function () {
+                            ok.click();
+                        });
+                    } else if (type === 'select') {
+                        var div = $('<div style="text-align:center;">');
+                        ctrl = $('<select>').appendTo(div);
+                        if (checkbox) {
+                            var label = $('<label>').text(checkbox.label);
+                            chkbx = $('<input type="checkbox">').appendTo(label);
+                            chkbx.val(checkbox.value);
+                            if (checkbox.tooltip) {
+                                label.attr('title', checkbox.tooltip);
+                            }
+                            chkbx.prop('checked', !!checkbox.checked);
+                            div.append($('<div>').append(label));
                         }
-                    };
+                        $.each(opts || [], function (opt, val) {
+                            if ((typeof val === 'undefined' ? 'undefined' : _typeof(val)) === 'object') {
+                                ctrl.append($('<option>').val(val.value).html(val.text));
+                            } else {
+                                ctrl.append($('<option>').html(val));
+                            }
+                        });
+                        dialog_content.append(div);
+                        if (defaultVal) {
+                            ctrl.val(defaultVal);
+                        }
+                        if (changeCb) {
+                            ctrl.bind('change', 'return', changeCb);
+                        }
+                        ctrl.bind('keydown', 'return', function () {
+                            ok.click();
+                        });
+                    } else if (type === 'process') {
+                        ok.hide();
+                    }
+
+                    box.show();
+
+                    ok.click(function () {
+                        box.hide();
+                        var resp = type === 'prompt' || type === 'select' ? ctrl.val() : true;
+                        if (callback) {
+                            if (chkbx) {
+                                callback(resp, chkbx.prop('checked'));
+                            } else {
+                                callback(resp);
+                            }
+                        }
+                    }).focus();
+
+                    if (type === 'prompt' || type === 'select') {
+                        ctrl.focus();
+                    }
+                };
 
                 $.alert = function (msg, cb) {
                     dbox('alert', msg, cb);
@@ -953,7 +898,7 @@ define([
                 };
             })();
 
-            var setSelectMode = function () {
+            var setSelectMode = function setSelectMode() {
                 var curr = $('.tool_button_current');
                 if (curr.length && curr[0].id !== 'tool_select') {
                     curr.removeClass('tool_button_current').addClass('tool_button');
@@ -967,8 +912,8 @@ define([
                 }
             };
 
-                // used to make the flyouts stay on the screen longer the very first time
-                // var flyoutspeed = 1250; // Currently unused
+            // used to make the flyouts stay on the screen longer the very first time
+            // var flyoutspeed = 1250; // Currently unused
             var textBeingEntered = false;
             var selectedElement = null;
             var multiselected = false;
@@ -978,20 +923,30 @@ define([
             var cur_context = '';
             var origTitle = $('title:first').text();
 
-            const displayChangeLayerBlock = function (maybeVisible) {
-                const block = $('.selLayerBlock');
+            var displayChangeLayerBlock = function displayChangeLayerBlock(maybeVisible) {
+                var block = $('.selLayerBlock');
 
-                const isHide = (function () {
-                    if (!maybeVisible) {return true;}
-                    if (svgCanvas.getCurrentDrawing().getNumLayers() <= 1) {return true;}
+                var isHide = function () {
+                    if (!maybeVisible) {
+                        return true;
+                    }
+                    if (svgCanvas.getCurrentDrawing().getNumLayers() <= 1) {
+                        return true;
+                    }
 
-                    if (multiselected) {return false;}
-                    if (selectedElement) {return false;}
+                    if (multiselected) {
+                        return false;
+                    }
+                    if (selectedElement) {
+                        return false;
+                    }
 
-                    if (!(multiselected && selectedElement)) {return true;}
+                    if (!(multiselected && selectedElement)) {
+                        return true;
+                    }
 
                     return true;
-                })();
+                }();
 
                 if (isHide) {
                     block.hide();
@@ -1002,8 +957,9 @@ define([
 
             // This function highlights the layer passed in (by fading out the other layers)
             // if no layer is passed in, this function restores the other layers
-            var toggleHighlightLayer = function (layerNameToHighlight) {
-                var i, curNames = [],
+            var toggleHighlightLayer = function toggleHighlightLayer(layerNameToHighlight) {
+                var i,
+                    curNames = [],
                     numLayers = svgCanvas.getCurrentDrawing().getNumLayers();
                 for (i = 0; i < numLayers; i++) {
                     curNames[i] = svgCanvas.getCurrentDrawing().getLayerName(i);
@@ -1022,22 +978,22 @@ define([
                 }
             };
 
-            var renderLayerLaserConfigs = function () {
+            var renderLayerLaserConfigs = function renderLayerLaserConfigs() {
                 var drawing = svgCanvas.getCurrentDrawing();
                 var currentLayerName = drawing.getCurrentLayerName();
 
                 LaserPanelController.render(currentLayerName);
             };
 
-            var populateLayers = function () {
+            var populateLayers = function populateLayers() {
                 svgCanvas.clearSelection();
                 var layerlist = $('#layerlist tbody').empty();
                 var selLayerNames = $('#selLayerNames').empty();
                 var drawing = svgCanvas.getCurrentDrawing();
                 var currentLayerName = drawing.getCurrentLayerName();
-                const layerCount = svgCanvas.getCurrentDrawing().getNumLayers();
+                var layerCount = svgCanvas.getCurrentDrawing().getNumLayers();
 
-                let layer = layerCount - 1;
+                var layer = layerCount - 1;
                 while (layer >= 0) {
                     var name = drawing.getLayerName(layer);
                     var layerTr = $('<tr class="layer">').toggleClass('layersel', name === currentLayerName);
@@ -1056,21 +1012,18 @@ define([
                 renderLayerLaserConfigs();
 
                 // handle selection of layer
-                $('#layerlist td.layername')
-                    .mouseup(function (evt) {
-                        $('#layerlist tr.layer').removeClass('layersel');
-                        $(this.parentNode).addClass('layersel');
-                        svgCanvas.setCurrentLayer(this.textContent);
-                        renderLayerLaserConfigs();
-                        svgCanvas.selectAllInCurrentLayer();
-                        evt.preventDefault();
-                    })
-                    .mouseover(function () {
-                        toggleHighlightLayer(this.textContent);
-                    })
-                    .mouseout(function () {
-                        toggleHighlightLayer();
-                    });
+                $('#layerlist td.layername').mouseup(function (evt) {
+                    $('#layerlist tr.layer').removeClass('layersel');
+                    $(this.parentNode).addClass('layersel');
+                    svgCanvas.setCurrentLayer(this.textContent);
+                    renderLayerLaserConfigs();
+                    svgCanvas.selectAllInCurrentLayer();
+                    evt.preventDefault();
+                }).mouseover(function () {
+                    toggleHighlightLayer(this.textContent);
+                }).mouseout(function () {
+                    toggleHighlightLayer();
+                });
                 $('#layerlist td.layervis').click(function () {
                     var row = $(this.parentNode).prevAll().length;
                     var name = $('#layerlist tr.layer:eq(' + row + ') td.layername').text();
@@ -1087,11 +1040,11 @@ define([
                 }
             };
 
-            var addLayerLaserConfig = function (layername) {
+            var addLayerLaserConfig = function addLayerLaserConfig(layername) {
                 LaserPanelController.initConfig(layername);
             };
 
-            var cloneLayerLaserConfig = function (oldName, newName) {
+            var cloneLayerLaserConfig = function cloneLayerLaserConfig(oldName, newName) {
                 // const oldConfig = $('#layerLaserConfigs > table').filter(function(){return $(this).find('.layername').text() === oldName;});
                 // const newConfig = oldConfig.clone();
                 // newConfig.find('.layername').text(newName);
@@ -1099,7 +1052,7 @@ define([
                 LaserPanelController.cloneConfig(oldName, newName);
             };
 
-            var showSourceEditor = function (e, forSaving) {
+            var showSourceEditor = function showSourceEditor(e, forSaving) {
                 if (editingsource) {
                     return;
                 }
@@ -1113,7 +1066,7 @@ define([
                 $('#svg_source_textarea').focus();
             };
 
-            var togglePathEditMode = function (editmode, elems) {
+            var togglePathEditMode = function togglePathEditMode(editmode, elems) {
                 $('#path_node_panel').toggle(editmode);
                 $('#tools_bottom_2,#tools_bottom_3').toggle(!editmode);
                 if (editmode) {
@@ -1132,7 +1085,7 @@ define([
                 }
             };
 
-            var saveHandler = function (wind, svg) {
+            var saveHandler = function saveHandler(wind, svg) {
                 editor.showSaveWarning = false;
 
                 // by default, we add the XML prolog back, systems integrating SVG-edit (wikis, CMSs)
@@ -1173,7 +1126,7 @@ define([
                 }
             };
 
-            var exportHandler = function (win, data) {
+            var exportHandler = function exportHandler(win, data) {
                 var issues = data.issues,
                     exportWindowName = data.exportWindowName;
 
@@ -1189,7 +1142,7 @@ define([
                     // Check if there's issues
                     if (issues.length) {
                         var pre = '\n \u2022 ';
-                        note += ('\n\n' + uiStrings.notification.noteTheseIssues + pre + issues.join(pre));
+                        note += '\n\n' + uiStrings.notification.noteTheseIssues + pre + issues.join(pre);
                     }
 
                     // Note that this will also prevent the notice even though new issues may appear later.
@@ -1284,7 +1237,7 @@ define([
                 });
             }
 
-            var setInputWidth = function (elem) {
+            var setInputWidth = function setInputWidth(elem) {
                 var w = Math.min(Math.max(12 + elem.value.length * 6, 50), 300);
                 $(elem).width(w);
             };
@@ -1298,26 +1251,25 @@ define([
                 */
                 function updateRuler(axis) {
                     // axis = x or y
-                    const isX = (axis === 'x');
-                    const side = isX ? 'width' : 'height';
-                    const otherSide = isX ? 'height' : 'width';
+                    var isX = axis === 'x';
+                    var side = isX ? 'width' : 'height';
+                    var otherSide = isX ? 'height' : 'width';
 
-                    const $rulersWrapper = $('#ruler_' + axis + ' > div');
-                    const total_len = $('#svgcanvas')[side]();
-                    const limit = 3000;
-                    const rulersCount = parseInt(total_len / limit, 10) + 1;
-
+                    var $rulersWrapper = $('#ruler_' + axis + ' > div');
+                    var total_len = $('#svgcanvas')[side]();
+                    var limit = 3000;
+                    var rulersCount = parseInt(total_len / limit, 10) + 1;
 
                     $rulersWrapper.empty();
                     $rulersWrapper[side](total_len + 'px');
 
-                    const rulers = (new Array(rulersCount))
-                        .fill(null)
-                        .map(x => document.createElement('canvas'));
+                    var rulers = new Array(rulersCount).fill(null).map(function (x) {
+                        return document.createElement('canvas');
+                    });
                     (function generateEmptyCanvas() {
-                        const devicePixelRatio = window.devicePixelRatio; // Retina support
-                        rulers.map((ruler, index) => {
-                            if(index > 0) {
+                        var devicePixelRatio = window.devicePixelRatio; // Retina support
+                        rulers.map(function (ruler, index) {
+                            if (index > 0) {
                                 if (isX) {
                                     $(ruler).css('margin-left', 0);
                                 } else {
@@ -1325,19 +1277,19 @@ define([
                                 }
                             }
                             return ruler;
-                        }).map((ruler, index) => {
-                            const lastIndex = rulersCount -1;
-                            if(index < lastIndex) {
+                        }).map(function (ruler, index) {
+                            var lastIndex = rulersCount - 1;
+                            if (index < lastIndex) {
                                 ruler[side] = limit;
                             } else {
                                 ruler[side] = total_len % limit;
                             }
                             return ruler;
-                        }).map((ruler) => {
+                        }).map(function (ruler) {
                             //support retina
-                            const isRetina = (devicePixelRatio > 1);
-                            if(isRetina) {
-                                const ruler_len = ruler[side];
+                            var isRetina = devicePixelRatio > 1;
+                            if (isRetina) {
+                                var ruler_len = ruler[side];
 
                                 ruler.style[side] = ruler_len + 'px';
                                 ruler[side] = ruler_len * devicePixelRatio;
@@ -1348,53 +1300,56 @@ define([
                                 ruler.getContext('2d').scale(devicePixelRatio, devicePixelRatio);
                             }
                             return ruler;
-                        }).map((ruler) => {
+                        }).map(function (ruler) {
                             $rulersWrapper.append(ruler);
                             return ruler;
                         });
                     })();
 
-                    (function drawRules(){
-                        const contentPosition = Number($('#svgcontent').attr(axis));
-                        const zoom = svgCanvas.getZoom();
+                    (function drawRules() {
+                        var contentPosition = Number($('#svgcontent').attr(axis));
+                        var zoom = svgCanvas.getZoom();
 
-                        const ctxs = rulers
-                            .map(ruler => ruler.getContext('2d'))
-                            .map(ctx => {
-                                ctx.fillStyle = '#333';
-                                ctx.strokeStyle = '#000';
-                                ctx.font = '12px sans-serif';
-                                return ctx;
-                            });
+                        var ctxs = rulers.map(function (ruler) {
+                            return ruler.getContext('2d');
+                        }).map(function (ctx) {
+                            ctx.fillStyle = '#333';
+                            ctx.strokeStyle = '#000';
+                            ctx.font = '12px sans-serif';
+                            return ctx;
+                        });
 
                         // Calculate the main number calibration in pixel
-                        const calibration = (function(){
-                            const size = 100 / zoom;
-                            const digit = Math.ceil(Math.log10(size));
-                            const intervals = [2, 5, 10].map(x => x*10**(digit-1));
-                            const interval = intervals.find(x => x >= size);
+                        var calibration = function () {
+                            var size = 100 / zoom;
+                            var digit = Math.ceil(Math.log10(size));
+                            var intervals = [2, 5, 10].map(function (x) {
+                                return x * 10 ** (digit - 1);
+                            });
+                            var interval = intervals.find(function (x) {
+                                return x >= size;
+                            });
                             return interval;
-                        })();
+                        }();
 
-                        const big_interval = calibration * zoom;
-                        const small_interval = big_interval / 10;
+                        var big_interval = calibration * zoom;
+                        var small_interval = big_interval / 10;
 
-                        let currentCtxIndex = 0;
-                        let ctx = ctxs[currentCtxIndex];
+                        var currentCtxIndex = 0;
+                        var ctx = ctxs[currentCtxIndex];
 
                         // position correspond to root
-                        let label_pos = ((contentPosition / zoom) % calibration) * zoom;
+                        var label_pos = contentPosition / zoom % calibration * zoom;
                         // position correspond to ruler
-                        let ruler_pos = label_pos;
+                        var ruler_pos = label_pos;
 
-                        drawAll:
-                        while (label_pos < total_len) {
+                        drawAll: while (label_pos < total_len) {
 
                             //draw the big intervals
                             {
                                 //draw line
                                 {
-                                    const cur_d = Math.round(ruler_pos) + 0.5;
+                                    var cur_d = Math.round(ruler_pos) + 0.5;
                                     if (isX) {
                                         ctx.moveTo(cur_d, 15);
                                         ctx.lineTo(cur_d, 0);
@@ -1405,8 +1360,8 @@ define([
                                 }
                                 //draw big label
                                 {
-                                    let label;
-                                    const labelNum = (label_pos - contentPosition) / zoom / 10;
+                                    var label = void 0;
+                                    var labelNum = (label_pos - contentPosition) / zoom / 10;
                                     if (calibration >= 10) {
                                         label = Math.round(labelNum);
                                     } else {
@@ -1416,29 +1371,29 @@ define([
 
                                     // Change 1000s to Ks
                                     if (label !== 0 && label !== 1000 && label % 1000 === 0) {
-                                        label = (label / 1000) + 'K';
+                                        label = label / 1000 + 'K';
                                     }
 
                                     if (isX) {
                                         ctx.fillText(label, ruler_pos + 2, 10);
                                     } else {
                                         // draw label vertically
-                                        const str = String(label).split('');
-                                        let i;
-                                        for(i=0; i < str.length; i++) {
-                                            if (str[i] === '.') {
+                                        var _str = String(label).split('');
+                                        var _i = void 0;
+                                        for (_i = 0; _i < _str.length; _i++) {
+                                            if (_str[_i] === '.') {
                                                 break;
                                             }
                                             ctx.textAlign = 'center';
-                                            ctx.fillText(str[i], 5, (ruler_pos + 12) + i * 12);
+                                            ctx.fillText(_str[_i], 5, ruler_pos + 12 + _i * 12);
                                         }
-                                        if(i < str.length) {
+                                        if (_i < _str.length) {
                                             ctx.textAlign = 'left';
-                                            ctx.fillText('.', 5, ruler_pos + 12 + i * 12 - 8);
-                                            i++;
-                                            for(; i < str.length; i++) {
+                                            ctx.fillText('.', 5, ruler_pos + 12 + _i * 12 - 8);
+                                            _i++;
+                                            for (; _i < _str.length; _i++) {
                                                 ctx.textAlign = 'center';
-                                                ctx.fillText(str[i], 5, ruler_pos + 12 + i * 12 - 8);
+                                                ctx.fillText(_str[_i], 5, ruler_pos + 12 + _i * 12 - 8);
                                             }
                                         }
                                     }
@@ -1447,8 +1402,8 @@ define([
 
                             // draw the small intervals
                             {
-                                for (let i = 1; i < 10; i++) {
-                                    let sub_d = Math.round(ruler_pos + small_interval * i) + 0.5;
+                                for (var _i2 = 1; _i2 < 10; _i2++) {
+                                    var sub_d = Math.round(ruler_pos + small_interval * _i2) + 0.5;
 
                                     // maybe switch to next canvas to continue drawing
                                     if (sub_d > limit) {
@@ -1463,7 +1418,7 @@ define([
                                     }
 
                                     // odd lines are slighly longer
-                                    const line_size = (i % 2) ? 12 : 10;
+                                    var line_size = _i2 % 2 ? 12 : 10;
                                     if (isX) {
                                         ctx.moveTo(sub_d, 15);
                                         ctx.lineTo(sub_d, line_size);
@@ -1476,24 +1431,24 @@ define([
                                 ruler_pos += big_interval;
                             }
                         }
-                        ctxs.map(ctx => ctx.stroke());
-
+                        ctxs.map(function (ctx) {
+                            return ctx.stroke();
+                        });
                     })();
                 }
                 updateRuler('x');
                 updateRuler('y');
             }
 
-
             var updateCanvas = editor.updateCanvas = function (zoomData) {
-                let autoCenter = zoomData ? zoomData.autoCenter : undefined;
-                const staticPoint = zoomData ? zoomData.staticPoint : null;
-                const w_orig = workarea.width(),
+                var autoCenter = zoomData ? zoomData.autoCenter : undefined;
+                var staticPoint = zoomData ? zoomData.staticPoint : null;
+                var w_orig = workarea.width(),
                     h_orig = workarea.height(); //固定的工作區大小 只跟視窗大小有關 目前為全視窗
                 var zoom = svgCanvas.getZoom(); //1 for 100%, 0.5 for 50%
                 var cnvs = $('#svgcanvas');
 
-                const old_scroll = {
+                var old_scroll = {
                     left: workarea.scrollLeft(),
                     top: workarea.scrollTop()
                 };
@@ -1502,7 +1457,7 @@ define([
                 w = Math.max(w_orig, svgCanvas.contentW * zoom * multi);
                 h = Math.max(h_orig, svgCanvas.contentH * zoom * multi);
 
-                if ((w_orig >= svgCanvas.contentW * zoom * multi) || (h_orig >= svgCanvas.contentH * zoom * multi)) {
+                if (w_orig >= svgCanvas.contentW * zoom * multi || h_orig >= svgCanvas.contentH * zoom * multi) {
                     autoCenter = true;
                 }
 
@@ -1512,13 +1467,13 @@ define([
                     workarea.css('overflow', 'hidden');
                 }
 
-                const old_canvas_width = cnvs.width();
+                var old_canvas_width = cnvs.width();
                 cnvs.width(w).height(h);
-                const new_canvas_width = cnvs.width();
+                var new_canvas_width = cnvs.width();
 
                 svgCanvas.updateCanvas(w, h);
 
-                const zoomRatio = new_canvas_width / old_canvas_width;
+                var zoomRatio = new_canvas_width / old_canvas_width;
 
                 function _scrollToMakeItCenter(workarea, svgcanvas) {
                     workarea.scrollLeft(svgcanvas.width() / 2 - workarea.width() / 2);
@@ -1526,12 +1481,12 @@ define([
                 }
 
                 function _scrollToMakePointStatic(workarea, staticPoint, zoomRatio, old_scroll) {
-                    const left_cvs = old_scroll.left + staticPoint.x; //related to canvas
-                    const newScrollLeft = left_cvs * zoomRatio - staticPoint.x;
+                    var left_cvs = old_scroll.left + staticPoint.x; //related to canvas
+                    var newScrollLeft = left_cvs * zoomRatio - staticPoint.x;
                     workarea.scrollLeft(newScrollLeft);
 
-                    const top_cvs = old_scroll.top + staticPoint.y; //related to canvas
-                    const newScrollTop = top_cvs * zoomRatio - staticPoint.y;
+                    var top_cvs = old_scroll.top + staticPoint.y; //related to canvas
+                    var newScrollTop = top_cvs * zoomRatio - staticPoint.y;
                     workarea.scrollTop(newScrollTop);
                 }
 
@@ -1552,34 +1507,34 @@ define([
                 ObjectPanelsController.render();
             };
 
-            var updateToolButtonState = function () {
+            var updateToolButtonState = function updateToolButtonState() {
                 var index, button;
-                var bNoFill = (svgCanvas.getColor('fill') === 'none');
-                var bNoStroke = (svgCanvas.getColor('stroke') === 'none');
+                var bNoFill = svgCanvas.getColor('fill') === 'none';
+                var bNoStroke = svgCanvas.getColor('stroke') === 'none';
                 var buttonsNeedingStroke = ['#tool_fhpath', '#tool_line'];
                 var buttonsNeedingFillAndStroke = ['#tools_rect .tool_button', '#tools_ellipse .tool_button', '#tool_text', '#tool_path'];
                 if (bNoStroke) {
-                    buttonsNeedingStroke.map(btn => {
+                    buttonsNeedingStroke.map(function (btn) {
                         if ($(btn).hasClass('tool_button_current')) {
                             clickSelect();
                         }
                         $(btn).addClass('disabled');
                     });
                 } else {
-                    buttonsNeedingStroke.map(btn => {
+                    buttonsNeedingStroke.map(function (btn) {
                         $(btn).removeClass('disabled');
                     });
                 }
 
                 if (bNoStroke && bNoFill) {
-                    buttonsNeedingFillAndStroke.map(btn => {
+                    buttonsNeedingFillAndStroke.map(function (btn) {
                         if ($(btn).hasClass('tool_button_current')) {
                             clickSelect();
                         }
                         $(btn).addClass('disabled');
                     });
                 } else {
-                    buttonsNeedingFillAndStroke.map(btn => {
+                    buttonsNeedingFillAndStroke.map(function (btn) {
                         $(btn).removeClass('disabled');
                     });
                 }
@@ -1600,12 +1555,11 @@ define([
                     });
                     shower.toggleClass('disabled', !has_enabled);
                 });
-
             };
 
-                // Updates the toolbar (colors, opacity, etc) based on the selected element
-                // This function also updates the opacity and id elements that are in the context panel
-            var updateToolbar = function () {
+            // Updates the toolbar (colors, opacity, etc) based on the selected element
+            // This function also updates the opacity and id elements that are in the context panel
+            var updateToolbar = function updateToolbar() {
                 var i, len;
                 if (selectedElement != null) {
                     switch (selectedElement.tagName) {
@@ -1657,7 +1611,7 @@ define([
 
                 // All elements including image and group have opacity
                 if (selectedElement != null) {
-                    var opac_perc = ((selectedElement.getAttribute('opacity') || 1.0) * 100);
+                    var opac_perc = (selectedElement.getAttribute('opacity') || 1.0) * 100;
                     $('#group_opacity').val(opac_perc);
                     $('#opac_slider').slider('option', 'value', opac_perc);
                     $('#elem_id').val(selectedElement.id);
@@ -1667,8 +1621,8 @@ define([
                 updateToolButtonState();
             };
 
-                // updates the context panel tools based on the selected element
-            var updateContextPanel = function () {
+            // updates the context panel tools based on the selected element
+            var updateContextPanel = function updateContextPanel() {
                 var elem = selectedElement;
                 ObjectPanelsController.setMe($(elem));
                 // If element has just been deleted, consider it null
@@ -1681,9 +1635,7 @@ define([
 
                 var is_node = currentMode === 'pathedit'; //elem ? (elem.id && elem.id.indexOf('pathpointgrip') == 0) : false;
                 var menu_items = $('#cmenu_canvas li');
-                $('#selected_panel, #multiselected_panel, #g_panel, #rect_panel, #circle_panel,' +
-                        '#ellipse_panel, #line_panel, #text_panel, #image_panel, #container_panel,' +
-                        ' #use_panel, #a_panel').hide();
+                $('#selected_panel, #multiselected_panel, #g_panel, #rect_panel, #circle_panel,' + '#ellipse_panel, #line_panel, #text_panel, #image_panel, #container_panel,' + ' #use_panel, #a_panel').hide();
                 if (elem != null) {
                     var elname = elem.nodeName;
                     ObjectPanelsController.setType(elname);
@@ -1728,7 +1680,7 @@ define([
                                     x = bb.x;
                                     y = bb.y;
                                     if (elname === 'path' || elname === 'polygon') {
-                                        let bbox = elem.getBBox();
+                                        var bbox = elem.getBBox();
                                         ObjectPanelsController.setWidth(bbox.width);
                                         ObjectPanelsController.setHeight(bbox.height);
                                     }
@@ -1793,17 +1745,17 @@ define([
                         text: [],
                         use: []
                     };
-                    const objectPanelsControllerSetter = {
+                    var objectPanelsControllerSetter = {
                         width: ObjectPanelsController.setWidth,
                         height: ObjectPanelsController.setHeight,
                         cx: ObjectPanelsController.setEllipsePositionX,
                         cy: ObjectPanelsController.setEllipsePositionY,
-                        rx: (elem.tagName === 'rect') ? ObjectPanelsController.setRectRoundedCornerRadiusX : ObjectPanelsController.setEllipseRadiusX,
+                        rx: elem.tagName === 'rect' ? ObjectPanelsController.setRectRoundedCornerRadiusX : ObjectPanelsController.setEllipseRadiusX,
                         ry: ObjectPanelsController.setEllipseRadiusY,
                         x1: ObjectPanelsController.setLineX1,
                         y1: ObjectPanelsController.setLineY1,
                         x2: ObjectPanelsController.setLineX2,
-                        y2: ObjectPanelsController.setLineY2,
+                        y2: ObjectPanelsController.setLineY2
                     };
 
                     var el_name = elem.tagName;
@@ -1833,7 +1785,7 @@ define([
                     }
 
                     if (panels[el_name]) {
-                        const cur_panels = panels[el_name];
+                        var cur_panels = panels[el_name];
 
                         $('#' + el_name + '_panel').show();
 
@@ -1880,52 +1832,49 @@ define([
                             ObjectPanelsController.setFontIsFill(svgCanvas.getFontIsFill());
                         } // text
                         else if (el_name === 'image') {
-                            if (svgCanvas.getMode() === 'image') {
-                                setImageURL(svgCanvas.getHref(elem));
-                            }
+                                if (svgCanvas.getMode() === 'image') {
+                                    setImageURL(svgCanvas.getHref(elem));
+                                }
 
-                            const threshold = $(elem).attr('data-threshold');
-                            let shading = $(elem).attr('data-shading');
-                            if (shading === 'false') {
-                                shading = false;
-                            } else {
-                                shading = Boolean(shading);
-                            }
-                            ObjectPanelsController.setImageShading(shading);
-                            ObjectPanelsController.setImageThreshold(threshold);
-                        } // image
-                        else if (el_name === 'g' || el_name === 'use') {
-                            $('#container_panel').show();
-                            var title = svgCanvas.getTitle();
-                            var label = $('#g_title')[0];
-                            label.value = title;
-                            setInputWidth(label);
-                            $('#g_title').prop('disabled', el_name === 'use');
+                                var threshold = $(elem).attr('data-threshold');
+                                var shading = $(elem).attr('data-shading');
+                                if (shading === 'false') {
+                                    shading = false;
+                                } else {
+                                    shading = Boolean(shading);
+                                }
+                                ObjectPanelsController.setImageShading(shading);
+                                ObjectPanelsController.setImageThreshold(threshold);
+                            } // image
+                            else if (el_name === 'g' || el_name === 'use') {
+                                    $('#container_panel').show();
+                                    var title = svgCanvas.getTitle();
+                                    var label = $('#g_title')[0];
+                                    label.value = title;
+                                    setInputWidth(label);
+                                    $('#g_title').prop('disabled', el_name === 'use');
 
-                            if ((el_name === 'use') && ($(elem).attr('data-xform'))) {
-                                const location = svgCanvas.getSvgRealLocation(elem);
-                                ObjectPanelsController.setPosition(location.x, location.y);
-                                ObjectPanelsController.setWidth(location.width);
-                                ObjectPanelsController.setHeight(location.height);
-                            }
-                        }
-                        else if (el_name === 'path') {
-                            //$('#container_panel').show();
-                        }
+                                    if (el_name === 'use' && $(elem).attr('data-xform')) {
+                                        var location = svgCanvas.getSvgRealLocation(elem);
+                                        ObjectPanelsController.setPosition(location.x, location.y);
+                                        ObjectPanelsController.setWidth(location.width);
+                                        ObjectPanelsController.setHeight(location.height);
+                                    }
+                                } else if (el_name === 'path') {
+                                    //$('#container_panel').show();
+                                }
                     }
                     menu_items[(el_name === 'g' ? 'en' : 'dis') + 'ableContextMenuItems']('#ungroup');
-                    menu_items[((el_name === 'g' || !multiselected) ? 'dis' : 'en') + 'ableContextMenuItems']('#group');
+                    menu_items[(el_name === 'g' || !multiselected ? 'dis' : 'en') + 'ableContextMenuItems']('#group');
 
                     ObjectPanelsController.render();
                 } // if (elem != null)
                 else if (multiselected) {
-                    $('#multiselected_panel').show();
-                    menu_items
-                        .enableContextMenuItems('#group')
-                        .disableContextMenuItems('#ungroup');
-                } else {
-                    menu_items.disableContextMenuItems('#delete,#cut,#copy,#group,#ungroup,#move_front,#move_up,#move_down,#move_back');
-                }
+                        $('#multiselected_panel').show();
+                        menu_items.enableContextMenuItems('#group').disableContextMenuItems('#ungroup');
+                    } else {
+                        menu_items.disableContextMenuItems('#delete,#cut,#copy,#group,#ungroup,#move_front,#move_up,#move_down,#move_back');
+                    }
 
                 // update history buttons
                 $('#tool_undo').toggleClass('disabled', undoMgr.getUndoStackSize() === 0);
@@ -1933,7 +1882,7 @@ define([
 
                 svgCanvas.addedNew = false;
 
-                if ((elem && !is_node) || multiselected) {
+                if (elem && !is_node || multiselected) {
                     // update the selected elements' layer
                     $('#selLayerNames').removeAttr('disabled').val(currentLayerName);
                     displayChangeLayerBlock(true);
@@ -1945,7 +1894,7 @@ define([
                 }
             };
 
-            var updateWireFrame = function () {
+            var updateWireFrame = function updateWireFrame() {
                 // Test support
                 if (supportsNonSS) {
                     return;
@@ -1955,7 +1904,7 @@ define([
                 $('#wireframe_rules').text(workarea.hasClass('wireframe') ? rule : '');
             };
 
-            var updateTitle = function (title) {
+            var updateTitle = function updateTitle(title) {
                 title = title || svgCanvas.getDocumentTitle();
                 var newTitle = origTitle + (title ? ': ' + title : '');
 
@@ -1966,19 +1915,19 @@ define([
                 $('title:first').text(newTitle);
             };
 
-                // called when we've selected a different element
-            var selectedChanged = function (win, elems) {
+            // called when we've selected a different element
+            var selectedChanged = function selectedChanged(win, elems) {
                 var mode = svgCanvas.getMode();
                 if (mode === 'select') {
                     setSelectMode();
                 }
-                var is_node = (mode === 'pathedit');
+                var is_node = mode === 'pathedit';
                 // if elems[1] is present, then we have more than one element
-                selectedElement = (elems.length === 1 || elems[1] == null ? elems[0] : null);
-                multiselected = (elems.length >= 2 && elems[1] != null);
-                const isAlignToolboxShowed = (elems.length >= 1) && (elems[0] !== null );
-                const isDistributeToolboxShowed = multiselected && elems.length >=3 ;
-                const isImageToolboxShowed = !multiselected && elems[0] && elems[0].nodeName === "image";
+                selectedElement = elems.length === 1 || elems[1] == null ? elems[0] : null;
+                multiselected = elems.length >= 2 && elems[1] != null;
+                var isAlignToolboxShowed = elems.length >= 1 && elems[0] !== null;
+                var isDistributeToolboxShowed = multiselected && elems.length >= 3;
+                var isImageToolboxShowed = !multiselected && elems[0] && elems[0].nodeName === "image";
                 if (selectedElement != null) {
                     // unless we're already in always set the mode of the editor to select because
                     // upon creation of a text element the editor is switched into
@@ -2013,9 +1962,9 @@ define([
                 });
             };
 
-                // Call when part of element is in process of changing, generally
-                // on mousemove actions like rotate, move, etc.
-            var elementTransition = function (win, elems) {
+            // Call when part of element is in process of changing, generally
+            // on mousemove actions like rotate, move, etc.
+            var elementTransition = function elementTransition(win, elems) {
                 var mode = svgCanvas.getMode();
                 var elem = elems[0];
 
@@ -2023,7 +1972,7 @@ define([
                     return;
                 }
 
-                multiselected = (elems.length >= 2 && elems[1] != null);
+                multiselected = elems.length >= 2 && elems[1] != null;
                 // Only updating fields for single elements for now
                 if (!multiselected) {
                     switch (mode) {
@@ -2033,10 +1982,10 @@ define([
                             $('#tool_reorient').toggleClass('disabled', ang === 0);
                             break;
 
-                            // TODO: Update values that change on move/resize, etc
-                            //						case "select":
-                            //						case "resize":
-                            //							break;
+                        // TODO: Update values that change on move/resize, etc
+                        //						case "select":
+                        //						case "resize":
+                        //							break;
                     }
                 }
                 svgCanvas.runExtensions('elementTransition', {
@@ -2044,17 +1993,17 @@ define([
                 });
             };
 
-                /**
-                 * Test whether an element is a layer or not.
-                 * @param {SVGGElement} elem - The SVGGElement to test.
-                 * @returns {boolean} True if the element is a layer
-                 */
+            /**
+             * Test whether an element is a layer or not.
+             * @param {SVGGElement} elem - The SVGGElement to test.
+             * @returns {boolean} True if the element is a layer
+             */
             function isLayer(elem) {
                 return elem && elem.tagName === 'g' && svgedit.draw.Layer.CLASS_REGEX.test(elem.getAttribute('class'));
             }
 
             // called when any element has changed
-            var elementChanged = function (win, elems) {
+            var elementChanged = function elementChanged(win, elems) {
                 var i,
                     mode = svgCanvas.getMode();
                 if (mode === 'select') {
@@ -2064,7 +2013,7 @@ define([
                 for (i = 0; i < elems.length; ++i) {
                     var elem = elems[i];
 
-                    var isSvgElem = (elem && elem.tagName === 'svg');
+                    var isSvgElem = elem && elem.tagName === 'svg';
                     if (isSvgElem || isLayer(elem)) {
                         populateLayers();
                         // if the element changed was the svg, then it could be a resolution change
@@ -2075,9 +2024,9 @@ define([
                     // Update selectedElement if element is no longer part of the image.
                     // This occurs for the text elements in Firefox
                     else if (elem && selectedElement && selectedElement.parentNode == null) {
-                        //						|| elem && elem.tagName == "path" && !multiselected) { // This was added in r1430, but not sure why
-                        selectedElement = elem;
-                    }
+                            //						|| elem && elem.tagName == "path" && !multiselected) { // This was added in r1430, but not sure why
+                            selectedElement = elem;
+                        }
                 }
 
                 editor.showSaveWarning = true;
@@ -2102,8 +2051,8 @@ define([
                 });
             };
 
-            var zoomChanged = function (win, zoomData) {
-                const defaultZoomData = {
+            var zoomChanged = function zoomChanged(win, zoomData) {
+                var defaultZoomData = {
                     zoomLevel: undefined,
                     factor: 1,
                     staticPoint: {
@@ -2112,7 +2061,7 @@ define([
                     },
                     autoCenter: false
                 };
-                const data = $.extend({}, defaultZoomData, zoomData);
+                var data = $.extend({}, defaultZoomData, zoomData);
                 data.zoomLevel = data.zoomLevel || svgCanvas.getZoom() * data.factor;
 
                 svgCanvas.setZoom(data.zoomLevel);
@@ -2142,7 +2091,7 @@ define([
                 return false;
             });
 
-            var contextChanged = function (win, context) {
+            var contextChanged = function contextChanged(win, context) {
                 var link_str = '';
                 if (context) {
                     var str = '';
@@ -2168,15 +2117,15 @@ define([
                 updateTitle();
             };
 
-                // Makes sure the current selected paint is available to work with
-            var prepPaints = function () {
+            // Makes sure the current selected paint is available to work with
+            var prepPaints = function prepPaints() {
                 paintBox.fill.prep();
                 paintBox.stroke.prep();
             };
 
             var flyout_funcs = {};
 
-            var setFlyoutTitles = function () {
+            var setFlyoutTitles = function setFlyoutTitles() {
                 $('.tools_flyout').each(function () {
                     var shower = $('#' + this.id + '_show');
                     if (shower.data('isLibrary')) {
@@ -2191,7 +2140,7 @@ define([
                 });
             };
 
-            var setFlyoutPositions = function () {
+            var setFlyoutPositions = function setFlyoutPositions() {
                 $('.tools_flyout').each(function () {
                     var shower = $('#' + this.id + '_show');
                     var pos = shower.offset();
@@ -2203,67 +2152,66 @@ define([
                 });
             };
 
-            var setupFlyouts = function (holders) {
+            var setupFlyouts = function setupFlyouts(holders) {
                 $.each(holders, function (hold_sel, btn_opts) {
                     var buttons = $(hold_sel).children();
                     var show_sel = hold_sel + '_show';
                     var shower = $(show_sel);
                     var def = false;
-                    buttons.addClass('tool_button')
-                        .unbind('click mousedown mouseup') // may not be necessary
-                        .each(function (i) {
-                            // Get this buttons options
-                            var opts = btn_opts[i];
+                    buttons.addClass('tool_button').unbind('click mousedown mouseup') // may not be necessary
+                    .each(function (i) {
+                        // Get this buttons options
+                        var opts = btn_opts[i];
 
-                            // Remember the function that goes with this ID
-                            flyout_funcs[opts.sel] = opts.fn;
+                        // Remember the function that goes with this ID
+                        flyout_funcs[opts.sel] = opts.fn;
 
-                            if (opts.isDefault) {
-                                def = i;
+                        if (opts.isDefault) {
+                            def = i;
+                        }
+
+                        // Clicking the icon in flyout should set this set's icon
+                        var func = function func(event) {
+                            var options = opts;
+                            //find the currently selected tool if comes from keystroke
+                            // if (event.type === 'keydown') {
+                            // 	var flyoutIsSelected = $(options.parent + '_show').hasClass('tool_button_current');
+                            // 	var currentOperation = $(options.parent + '_show').attr('data-curopt');
+                            // 	$.each(holders[opts.parent], function(i, tool) {
+                            // 		if (tool.sel == currentOperation) {
+                            // 			if (!event.shiftKey || !flyoutIsSelected) {
+                            // 				options = tool;
+                            // 			} else {
+                            // 				options = holders[opts.parent][i+1] || holders[opts.parent][0];
+                            // 			}
+                            // 		}
+                            // 	});
+                            // }
+                            if ($(this).hasClass('disabled')) {
+                                return false;
+                            }
+                            if (toolButtonClick(show_sel)) {
+                                options.fn();
+                            }
+                            var icon;
+                            if (options.icon) {
+                                icon = $.getSvgIcon(options.icon, true);
+                            } else {
+                                icon = $(options.sel).children().eq(0).clone();
                             }
 
-                            // Clicking the icon in flyout should set this set's icon
-                            var func = function (event) {
-                                var options = opts;
-                                //find the currently selected tool if comes from keystroke
-                                // if (event.type === 'keydown') {
-                                // 	var flyoutIsSelected = $(options.parent + '_show').hasClass('tool_button_current');
-                                // 	var currentOperation = $(options.parent + '_show').attr('data-curopt');
-                                // 	$.each(holders[opts.parent], function(i, tool) {
-                                // 		if (tool.sel == currentOperation) {
-                                // 			if (!event.shiftKey || !flyoutIsSelected) {
-                                // 				options = tool;
-                                // 			} else {
-                                // 				options = holders[opts.parent][i+1] || holders[opts.parent][0];
-                                // 			}
-                                // 		}
-                                // 	});
-                                // }
-                                if ($(this).hasClass('disabled')) {
-                                    return false;
-                                }
-                                if (toolButtonClick(show_sel)) {
-                                    options.fn();
-                                }
-                                var icon;
-                                if (options.icon) {
-                                    icon = $.getSvgIcon(options.icon, true);
-                                } else {
-                                    icon = $(options.sel).children().eq(0).clone();
-                                }
+                            icon[0].setAttribute('width', shower.width());
+                            icon[0].setAttribute('height', shower.height());
+                            shower.children(':not(.flyout_arrow_horiz)').remove();
+                            shower.append(icon).attr('data-curopt', options.sel); // This sets the current mode
+                        };
 
-                                icon[0].setAttribute('width', shower.width());
-                                icon[0].setAttribute('height', shower.height());
-                                shower.children(':not(.flyout_arrow_horiz)').remove();
-                                shower.append(icon).attr('data-curopt', options.sel); // This sets the current mode
-                            };
+                        $(this).mouseup(func);
 
-                            $(this).mouseup(func);
-
-                            if (opts.key) {
-                                $(document).bind('keydown', opts.key[0] + ' shift+' + opts.key[0], func);
-                            }
-                        });
+                        if (opts.key) {
+                            $(document).bind('keydown', opts.key[0] + ' shift+' + opts.key[0], func);
+                        }
+                    });
 
                     if (def) {
                         shower.attr('data-curopt', btn_opts[def].sel);
@@ -2314,7 +2262,7 @@ define([
                 setFlyoutPositions();
             };
 
-            var makeFlyoutHolder = function (id, child) {
+            var makeFlyoutHolder = function makeFlyoutHolder(id, child) {
                 var div = $('<div>', {
                     'class': 'tools_flyout',
                     id: id
@@ -2323,7 +2271,7 @@ define([
                 return div;
             };
 
-            var uaPrefix = (function () {
+            var uaPrefix = function () {
                 var prop;
                 var regex = /^(Moz|Webkit|Khtml|O|ms|Icab)(?=[A-Z])/;
                 var someScript = document.getElementsByTagName('script')[0];
@@ -2343,9 +2291,9 @@ define([
                 }
 
                 return '';
-            })();
+            }();
 
-            var scaleElements = function (elems, scale) {
+            var scaleElements = function scaleElements(elems, scale) {
                 // var prefix = '-' + uaPrefix.toLowerCase() + '-'; // Currently unused
                 var sides = ['top', 'left', 'bottom', 'right'];
 
@@ -2382,9 +2330,7 @@ define([
             var setIconSize = editor.setIconSize = function (size) {
 
                 //				var elems = $('.tool_button, .push_button, .tool_button_current, .disabled, .icon_label, #url_notice, #tool_open');
-                var sel_toscale = '#tools_top .toolset, #editor_panel > *, #history_panel > *,' +
-                        '				#main_button, #tools_left > *, #path_node_panel > *, #multiselected_panel > *,' +
-                        '				#g_panel > *, #tool_font_size > *, .tools_flyout';
+                var sel_toscale = '#tools_top .toolset, #editor_panel > *, #history_panel > *,' + '				#main_button, #tools_left > *, #path_node_panel > *, #multiselected_panel > *,' + '				#g_panel > *, #tool_font_size > *, .tools_flyout';
 
                 var elems = $(sel_toscale);
                 var scale = 1;
@@ -2470,90 +2416,89 @@ define([
                     'div#workarea': {
                         'left': 38,
                         'top': 74
-                    }
-                    //					'#tools_bottom': {
-                    //						'left': {s: '27px', l: '46px', xl: '65px'},
-                    //						'height': {s: '58px', l: '98px', xl: '145px'}
-                    //					},
-                    //					'#color_tools': {
-                    //						'border-spacing': {s: '0 1px'},
-                    //						'margin-top': {s: '-1px'}
-                    //					},
-                    //					'#color_tools .icon_label': {
-                    //						'width': {l:'43px', xl: '60px'}
-                    //					},
-                    //					'.color_tool': {
-                    //						'height': {s: '20px'}
-                    //					},
-                    //					'#tool_opacity': {
-                    //						'top': {s: '1px'},
-                    //						'height': {s: 'auto', l:'auto', xl:'auto'}
-                    //					},
-                    //					'#tools_top input, #tools_bottom input': {
-                    //						'margin-top': {s: '2px', l: '4px', xl: '5px'},
-                    //						'height': {s: 'auto', l: 'auto', xl: 'auto'},
-                    //						'border': {s: '1px solid #555', l: 'auto', xl: 'auto'},
-                    //						'font-size': {s: '.9em', l: '1.2em', xl: '1.4em'}
-                    //					},
-                    //					'#zoom_panel': {
-                    //						'margin-top': {s: '3px', l: '4px', xl: '5px'}
-                    //					},
-                    //					'#copyright, #tools_bottom .label': {
-                    //						'font-size': {l: '1.5em', xl: '2em'},
-                    //						'line-height': {s: '15px'}
-                    //					},
-                    //					'#tools_bottom_2': {
-                    //						'width': {l: '295px', xl: '355px'},
-                    //						'top': {s: '4px'}
-                    //					},
-                    //					'#tools_top > div, #tools_top': {
-                    //						'line-height': {s: '17px', l: '34px', xl: '50px'}
-                    //					},
-                    //					'.dropdown button': {
-                    //						'height': {s: '18px', l: '34px', xl: '40px'},
-                    //						'line-height': {s: '18px', l: '34px', xl: '40px'},
-                    //						'margin-top': {s: '3px'}
-                    //					},
-                    //					'#tools_top label, #tools_bottom label': {
-                    //						'font-size': {s: '1em', l: '1.5em', xl: '2em'},
-                    //						'height': {s: '25px', l: '42px', xl: '64px'}
-                    //					},
-                    //					'div.toolset': {
-                    //						'height': {s: '25px', l: '42px', xl: '64px'}
-                    //					},
-                    //					'#tool_bold, #tool_italic': {
-                    //						'font-size': {s: '1.5em', l: '3em', xl: '4.5em'}
-                    //					},
-                    //					'#sidepanels': {
-                    //						'top': {s: '50px', l: '88px', xl: '125px'},
-                    //						'bottom': {s: '51px', l: '68px', xl: '65px'}
-                    //					},
-                    //					'#layerbuttons': {
-                    //						'width': {l: '130px', xl: '175px'},
-                    //						'height': {l: '24px', xl: '30px'}
-                    //					},
-                    //					'#layerlist': {
-                    //						'width': {l: '128px', xl: '150px'}
-                    //					},
-                    //					'.layer_button': {
-                    //						'width': {l: '19px', xl: '28px'},
-                    //						'height': {l: '19px', xl: '28px'}
-                    //					},
-                    //					'input.spin-button': {
-                    //						'background-image': {l: 'url('images/spinbtn_updn_big.png')', xl: 'url('images/spinbtn_updn_big.png')'},
-                    //						'background-position': {l: '100% -5px', xl: '100% -2px'},
-                    //						'padding-right': {l: '24px', xl: '24px' }
-                    //					},
-                    //					'input.spin-button.up': {
-                    //						'background-position': {l: '100% -45px', xl: '100% -42px'}
-                    //					},
-                    //					'input.spin-button.down': {
-                    //						'background-position': {l: '100% -85px', xl: '100% -82px'}
-                    //					},
-                    //					'#position_opts': {
-                    //						'width': {all: (size_num*4) +'px'}
-                    //					}
-                };
+                        //					'#tools_bottom': {
+                        //						'left': {s: '27px', l: '46px', xl: '65px'},
+                        //						'height': {s: '58px', l: '98px', xl: '145px'}
+                        //					},
+                        //					'#color_tools': {
+                        //						'border-spacing': {s: '0 1px'},
+                        //						'margin-top': {s: '-1px'}
+                        //					},
+                        //					'#color_tools .icon_label': {
+                        //						'width': {l:'43px', xl: '60px'}
+                        //					},
+                        //					'.color_tool': {
+                        //						'height': {s: '20px'}
+                        //					},
+                        //					'#tool_opacity': {
+                        //						'top': {s: '1px'},
+                        //						'height': {s: 'auto', l:'auto', xl:'auto'}
+                        //					},
+                        //					'#tools_top input, #tools_bottom input': {
+                        //						'margin-top': {s: '2px', l: '4px', xl: '5px'},
+                        //						'height': {s: 'auto', l: 'auto', xl: 'auto'},
+                        //						'border': {s: '1px solid #555', l: 'auto', xl: 'auto'},
+                        //						'font-size': {s: '.9em', l: '1.2em', xl: '1.4em'}
+                        //					},
+                        //					'#zoom_panel': {
+                        //						'margin-top': {s: '3px', l: '4px', xl: '5px'}
+                        //					},
+                        //					'#copyright, #tools_bottom .label': {
+                        //						'font-size': {l: '1.5em', xl: '2em'},
+                        //						'line-height': {s: '15px'}
+                        //					},
+                        //					'#tools_bottom_2': {
+                        //						'width': {l: '295px', xl: '355px'},
+                        //						'top': {s: '4px'}
+                        //					},
+                        //					'#tools_top > div, #tools_top': {
+                        //						'line-height': {s: '17px', l: '34px', xl: '50px'}
+                        //					},
+                        //					'.dropdown button': {
+                        //						'height': {s: '18px', l: '34px', xl: '40px'},
+                        //						'line-height': {s: '18px', l: '34px', xl: '40px'},
+                        //						'margin-top': {s: '3px'}
+                        //					},
+                        //					'#tools_top label, #tools_bottom label': {
+                        //						'font-size': {s: '1em', l: '1.5em', xl: '2em'},
+                        //						'height': {s: '25px', l: '42px', xl: '64px'}
+                        //					},
+                        //					'div.toolset': {
+                        //						'height': {s: '25px', l: '42px', xl: '64px'}
+                        //					},
+                        //					'#tool_bold, #tool_italic': {
+                        //						'font-size': {s: '1.5em', l: '3em', xl: '4.5em'}
+                        //					},
+                        //					'#sidepanels': {
+                        //						'top': {s: '50px', l: '88px', xl: '125px'},
+                        //						'bottom': {s: '51px', l: '68px', xl: '65px'}
+                        //					},
+                        //					'#layerbuttons': {
+                        //						'width': {l: '130px', xl: '175px'},
+                        //						'height': {l: '24px', xl: '30px'}
+                        //					},
+                        //					'#layerlist': {
+                        //						'width': {l: '128px', xl: '150px'}
+                        //					},
+                        //					'.layer_button': {
+                        //						'width': {l: '19px', xl: '28px'},
+                        //						'height': {l: '19px', xl: '28px'}
+                        //					},
+                        //					'input.spin-button': {
+                        //						'background-image': {l: 'url('images/spinbtn_updn_big.png')', xl: 'url('images/spinbtn_updn_big.png')'},
+                        //						'background-position': {l: '100% -5px', xl: '100% -2px'},
+                        //						'padding-right': {l: '24px', xl: '24px' }
+                        //					},
+                        //					'input.spin-button.up': {
+                        //						'background-position': {l: '100% -45px', xl: '100% -42px'}
+                        //					},
+                        //					'input.spin-button.down': {
+                        //						'background-position': {l: '100% -85px', xl: '100% -82px'}
+                        //					},
+                        //					'#position_opts': {
+                        //						'width': {all: (size_num*4) +'px'}
+                        //					}
+                    } };
 
                 var rule_elem = $('#tool_size_rules');
                 if (!rule_elem.length) {
@@ -2570,29 +2515,27 @@ define([
                         $.each(rules, function (prop, values) {
                             var val;
                             if (typeof values === 'number') {
-                                val = (values * scale) + 'px';
+                                val = values * scale + 'px';
                             } else if (values[size] || values.all) {
-                                val = (values[size] || values.all);
+                                val = values[size] || values.all;
                             }
-                            styleStr += (prop + ':' + val + ';');
+                            styleStr += prop + ':' + val + ';';
                         });
                         styleStr += '}';
                     });
                     //this.style[uaPrefix + 'Transform'] = 'scale(' + scale + ')';
                     var prefix = '-' + uaPrefix.toLowerCase() + '-';
-                    styleStr += (sel_toscale + '{' + prefix + 'transform: scale(' + scale + ');}' +
-                            ' #svg_editor div.toolset .toolset {' + prefix + 'transform: scale(1); margin: 1px !important;}' // Hack for markers
-                            +
-                            ' #svg_editor .ui-slider {' + prefix + 'transform: scale(' + (1 / scale) + ');}' // Hack for sliders
-                    );
+                    styleStr += sel_toscale + '{' + prefix + 'transform: scale(' + scale + ');}' + ' #svg_editor div.toolset .toolset {' + prefix + 'transform: scale(1); margin: 1px !important;}' // Hack for markers
+                    + ' #svg_editor .ui-slider {' + prefix + 'transform: scale(' + 1 / scale + ');}' // Hack for sliders
+                    ;
                     rule_elem.text(styleStr);
                 }
 
                 setFlyoutPositions();
             };
 
-                // TODO: Combine this with addDropDown or find other way to optimize
-            var addAltDropDown = function (elem, list, callback, opts) {
+            // TODO: Combine this with addDropDown or find other way to optimize
+            var addAltDropDown = function addAltDropDown(elem, list, callback, opts) {
                 var button = $(elem);
                 list = $(list);
                 var on_button = false;
@@ -2606,7 +2549,6 @@ define([
                         $(this).addClass('current').siblings().removeClass('current');
                     }
                     callback.apply(this, arguments);
-
                 });
 
                 $(window).mouseup(function (evt) {
@@ -2658,7 +2600,7 @@ define([
             };
 
             var extsPreLang = [];
-            var extAdded = function (win, ext) {
+            var extAdded = function extAdded(win, ext) {
                 if (!ext) {
                     return;
                 }
@@ -2667,7 +2609,8 @@ define([
                 var cb_ready = true; // Set to false to delay callback (e.g. wait for $.svgIcons)
 
                 if (ext.langReady) {
-                    if (editor.langChanged) { // We check for this since the "lang" pref could have been set by storage
+                    if (editor.langChanged) {
+                        // We check for this since the "lang" pref could have been set by storage
                         var lang = $.pref('lang');
                         ext.langReady({
                             lang: lang,
@@ -2691,7 +2634,7 @@ define([
                     }
                 }
 
-                var runCallback = function () {
+                var runCallback = function runCallback() {
                     if (ext.callback && !cb_called && cb_ready) {
                         cb_called = true;
                         ext.callback();
@@ -2704,7 +2647,7 @@ define([
                     $.each(ext.context_tools, function (i, tool) {
                         // Add select tool
                         var html;
-                        var cont_id = tool.container_id ? (' id="' + tool.container_id + '"') : '';
+                        var cont_id = tool.container_id ? ' id="' + tool.container_id + '"' : '';
                         var panel = $('#' + tool.panel);
 
                         // create the panel if it doesn't exist
@@ -2726,10 +2669,9 @@ define([
                                 }
                                 break;
                             case 'select':
-                                html = '<label' + cont_id + '>' +
-                                        '<select id="' + tool.id + '">';
+                                html = '<label' + cont_id + '>' + '<select id="' + tool.id + '">';
                                 $.each(tool.options, function (val, text) {
-                                    var sel = (val == tool.defval) ? ' selected' : '';
+                                    var sel = val == tool.defval ? ' selected' : '';
                                     html += '<option value="' + val + '"' + sel + '>' + text + '</option>';
                                 });
                                 html += '</select></label>';
@@ -2741,8 +2683,7 @@ define([
                                 });
                                 break;
                             case 'button-select':
-                                html = '<div id="' + tool.id + '" class="dropdown toolset" title="' + tool.title + '">' +
-                                        '<div id="cur_' + tool.id + '" class="icon_label"></div><button></button></div>';
+                                html = '<div id="' + tool.id + '" class="dropdown toolset" title="' + tool.title + '">' + '<div id="cur_' + tool.id + '" class="icon_label"></div><button></button></div>';
 
                                 var list = $('<ul id="' + tool.id + '_opts"></ul>').appendTo('#option_lists');
 
@@ -2754,20 +2695,16 @@ define([
                                 var dropdown = $(html).appendTo(panel).children();
 
                                 btn_selects.push({
-                                    elem: ('#' + tool.id),
-                                    list: ('#' + tool.id + '_opts'),
+                                    elem: '#' + tool.id,
+                                    list: '#' + tool.id + '_opts',
                                     title: tool.title,
                                     callback: tool.events.change,
-                                    cur: ('#cur_' + tool.id)
+                                    cur: '#cur_' + tool.id
                                 });
 
                                 break;
                             case 'input':
-                                html = '<label' + cont_id + '>' +
-                                        '<span id="' + tool.id + '_label">' +
-                                        tool.label + ':</span>' +
-                                        '<input id="' + tool.id + '" title="' + tool.title +
-                                        '" size="' + (tool.size || '4') + '" value="' + (tool.defval || '') + '" type="text"/></label>';
+                                html = '<label' + cont_id + '>' + '<span id="' + tool.id + '_label">' + tool.label + ':</span>' + '<input id="' + tool.id + '" title="' + tool.title + '" size="' + (tool.size || '4') + '" value="' + (tool.defval || '') + '" type="text"/></label>';
 
                                 // Creates the tool, hides & adds it, returns the select element
 
@@ -2797,7 +2734,7 @@ define([
                         svgicons = ext.svgicons,
                         holders = {};
 
-                        // Add buttons given by extension
+                    // Add buttons given by extension
                     $.each(ext.buttons, function (i, btn) {
                         var icon, svgicon, tls_id;
                         var id = btn.id;
@@ -2805,7 +2742,7 @@ define([
 
                         // Give button a unique ID
                         while ($('#' + id).length) {
-                            id = btn.id + '_' + (++num);
+                            id = btn.id + '_' + ++num;
                         }
 
                         if (!svgicons) {
@@ -2845,10 +2782,7 @@ define([
                                 break;
                         }
                         var flyout_holder, cur_h, show_btn, ref_data, ref_btn;
-                        var button = $((btn.list || btn.type === 'app_menu') ? '<li/>' : '<div/>')
-                            .attr('id', id)
-                            .attr('title', btn.title)
-                            .addClass(cls);
+                        var button = $(btn.list || btn.type === 'app_menu' ? '<li/>' : '<div/>').attr('id', id).attr('title', btn.title).addClass(cls);
                         if (!btn.includeWith && !btn.list) {
                             if ('position' in btn) {
                                 if ($(parent).children().eq(btn.position).length) {
@@ -2871,11 +2805,9 @@ define([
                                 if (!ref_btn.parent().hasClass('tools_flyout')) {
                                     // Create flyout placeholder
                                     tls_id = ref_btn[0].id.replace('tool_', 'tools_');
-                                    show_btn = ref_btn.clone()
-                                        .attr('id', tls_id + '_show')
-                                        .append($('<div>', {
-                                            'class': 'flyout_arrow_horiz'
-                                        }));
+                                    show_btn = ref_btn.clone().attr('id', tls_id + '_show').append($('<div>', {
+                                        'class': 'flyout_arrow_horiz'
+                                    }));
 
                                     ref_btn.before(show_btn);
 
@@ -2913,7 +2845,6 @@ define([
                             } else if (btn.type === 'app_menu') {
                                 button.append('<div>').append(btn.title);
                             }
-
                         } else if (btn.list) {
                             // Add button to list
                             button.addClass('push_button');
@@ -2934,11 +2865,9 @@ define([
                             if (!ref_btn.parent().hasClass('tools_flyout')) {
                                 // Create flyout placeholder
                                 tls_id = ref_btn[0].id.replace('tool_', 'tools_');
-                                show_btn = ref_btn.clone()
-                                    .attr('id', tls_id + '_show')
-                                    .append($('<div>', {
-                                        'class': 'flyout_arrow_horiz'
-                                    }));
+                                show_btn = ref_btn.clone().attr('id', tls_id + '_show').append($('<div>', {
+                                    'class': 'flyout_arrow_horiz'
+                                }));
 
                                 ref_btn.before(show_btn);
 
@@ -2964,7 +2893,7 @@ define([
 
                             // {sel:'#tool_rect', fn: clickRect, evt: 'mouseup', key: 4, parent: '#tools_rect', icon: 'rect'}
 
-                            var pos = ('position' in opts) ? opts.position : 'last';
+                            var pos = 'position' in opts ? opts.position : 'last';
                             var len = flyout_holder.children().length;
 
                             // Add at given position or end
@@ -3022,10 +2951,10 @@ define([
                         w: 24,
                         h: 24,
                         id_match: false,
-                        no_img: (!svgedit.browser.isWebkit()),
+                        no_img: !svgedit.browser.isWebkit(),
                         fallback: fallback_obj,
                         placement: placement_obj,
-                        callback: function (icons) {
+                        callback: function callback(icons) {
                             // Non-ideal hack to make the icon match the current size
                             //if (curPrefs.iconsize && curPrefs.iconsize !== 'm') {
                             if ($.pref('iconsize') !== 'm') {
@@ -3040,7 +2969,7 @@ define([
                 runCallback();
             };
 
-            var getPaint = function (color, opac, type) {
+            var getPaint = function getPaint(color, opac, type) {
                 // update the editor's fill paint
                 var opts = {
                     alpha: opac
@@ -3114,15 +3043,15 @@ define([
 
             $('#image_save_opts input').val([$.pref('img_save')]);
 
-            var changeRectRadius = function (ctl) {
+            var changeRectRadius = function changeRectRadius(ctl) {
                 svgCanvas.setRectRadius(ctl.value);
             };
 
-            var changeFontSize = function (ctl) {
+            var changeFontSize = function changeFontSize(ctl) {
                 svgCanvas.setFontSize(ctl.value);
             };
 
-            var changeStrokeWidth = function (ctl) {
+            var changeStrokeWidth = function changeStrokeWidth(ctl) {
                 var val = ctl.value;
                 if (val == 0 && selectedElement && ['line', 'polyline'].indexOf(selectedElement.nodeName) >= 0) {
                     val = ctl.value = 1;
@@ -3130,12 +3059,12 @@ define([
                 svgCanvas.setStrokeWidth(val);
             };
 
-            var changeRotationAngle = function (ctl) {
+            var changeRotationAngle = function changeRotationAngle(ctl) {
                 svgCanvas.setRotationAngle(ctl.value);
                 $('#tool_reorient').toggleClass('disabled', parseInt(ctl.value, 10) === 0);
             };
 
-            var changeOpacity = function (ctl, val) {
+            var changeOpacity = function changeOpacity(ctl, val) {
                 if (val == null) {
                     val = ctl.value;
                 }
@@ -3146,7 +3075,7 @@ define([
                 svgCanvas.setOpacity(val / 100);
             };
 
-            var changeBlur = function (ctl, val, noUndo) {
+            var changeBlur = function changeBlur(ctl, val, noUndo) {
                 if (val == null) {
                     val = ctl.value;
                 }
@@ -3181,7 +3110,7 @@ define([
             $('#selLayerNames').change(function () {
                 var destLayer = this.options[this.selectedIndex].value;
                 var confirmStr = uiStrings.notification.QmoveElemsToLayer.replace('%s', destLayer);
-                var moveToLayer = function (ok) {
+                var moveToLayer = function moveToLayer(ok) {
                     if (!ok) {
                         return;
                     }
@@ -3211,7 +3140,7 @@ define([
                 evt.stopPropagation();
                 svgCanvas.setTextContent(this.value);
             });
-            $('#text').bind('keydown', function(evt) {
+            $('#text').bind('keydown', function (evt) {
                 evt.stopPropagation();
                 if (evt.keyCode === KeycodeConstants.KEY_RETURN) {
                     svgCanvas.textActions.toSelectMode(true);
@@ -3325,8 +3254,8 @@ define([
                         return;
                     }
 
-                    w_area.scrollLeft -= (evt.clientX - last_x);
-                    w_area.scrollTop -= (evt.clientY - last_y);
+                    w_area.scrollLeft -= evt.clientX - last_x;
+                    w_area.scrollTop -= evt.clientY - last_y;
 
                     last_x = evt.clientX;
                     last_y = evt.clientY;
@@ -3434,7 +3363,7 @@ define([
 
                 // Check if JS method of hovering needs to be used (Webkit bug)
                 list_items.mouseover(function () {
-                    js_hover = ($(this).css('background-color') === 'rgba(0, 0, 0, 0)');
+                    js_hover = $(this).css('background-color') === 'rgba(0, 0, 0, 0)';
 
                     list_items.unbind('mouseover');
                     if (js_hover) {
@@ -3508,14 +3437,14 @@ define([
 
             // For slider usage, see: http://jqueryui.com/demos/slider/
             $('#opac_slider').slider({
-                start: function () {
+                start: function start() {
                     $('#opacity_dropdown li:not(.special)').hide();
                 },
-                stop: function () {
+                stop: function stop() {
                     $('#opacity_dropdown li').show();
                     $(window).mouseup();
                 },
-                slide: function (evt, ui) {
+                slide: function slide(evt, ui) {
                     changeOpacity(ui);
                 }
             });
@@ -3527,16 +3456,16 @@ define([
             $('#blur_slider').slider({
                 max: 10,
                 step: 0.1,
-                stop: function (evt, ui) {
+                stop: function stop(evt, ui) {
                     slideStart = false;
                     changeBlur(ui);
                     $('#blur_dropdown li').show();
                     $(window).mouseup();
                 },
-                start: function () {
+                start: function start() {
                     slideStart = true;
                 },
-                slide: function (evt, ui) {
+                slide: function slide(evt, ui) {
                     changeBlur(ui, null, slideStart);
                 }
             });
@@ -3561,25 +3490,22 @@ define([
             });
 
             /*
-
-                When a flyout icon is selected
+                 When a flyout icon is selected
                     (if flyout) {
                     - Change the icon
                     - Make pressing the button run its stuff
                     }
                     - Run its stuff
-
-                When its shortcut key is pressed
+                 When its shortcut key is pressed
                     - If not current in list, do as above
                     , else:
                     - Just run its stuff
-
-                */
+                 */
 
             // Unfocus text input when workarea is mousedowned.
             (function () {
                 var inp;
-                var unfocus = function () {
+                var unfocus = function unfocus() {
                     $(inp).blur();
                 };
 
@@ -3597,134 +3523,134 @@ define([
                 });
             })();
 
-            var clickFHPath = function () {
+            var clickFHPath = function clickFHPath() {
                 if (toolButtonClick('#tool_fhpath')) {
                     svgCanvas.setMode('fhpath');
                 }
             };
 
-            var clickLine = function () {
+            var clickLine = function clickLine() {
                 if (toolButtonClick('#tool_line')) {
                     svgCanvas.setMode('line');
                 }
             };
 
-            var clickSquare = function () {
+            var clickSquare = function clickSquare() {
                 if (toolButtonClick('#tool_square')) {
                     svgCanvas.setMode('square');
                 }
             };
 
-            var clickRect = function () {
+            var clickRect = function clickRect() {
                 if (toolButtonClick('#tool_rect')) {
                     svgCanvas.setMode('rect');
                 }
             };
 
-            var clickFHRect = function () {
+            var clickFHRect = function clickFHRect() {
                 if (toolButtonClick('#tool_fhrect')) {
                     svgCanvas.setMode('fhrect');
                 }
             };
 
-            var clickCircle = function () {
+            var clickCircle = function clickCircle() {
                 if (toolButtonClick('#tool_circle')) {
                     svgCanvas.setMode('circle');
                 }
             };
 
-            var clickEllipse = function () {
+            var clickEllipse = function clickEllipse() {
                 if (toolButtonClick('#tool_ellipse')) {
                     svgCanvas.setMode('ellipse');
                 }
             };
 
-            var clickFHEllipse = function () {
+            var clickFHEllipse = function clickFHEllipse() {
                 if (toolButtonClick('#tool_fhellipse')) {
                     svgCanvas.setMode('fhellipse');
                 }
             };
 
-            var clickImage = function () {
+            var clickImage = function clickImage() {
                 if (toolButtonClick('#tool_image')) {
                     svgCanvas.setMode('image');
                 }
             };
 
-            var unzoom = function () {
+            var unzoom = function unzoom() {
                 editor.resetView();
             };
 
-            var clickText = function () {
+            var clickText = function clickText() {
                 if (toolButtonClick('#tool_text')) {
                     svgCanvas.setMode('text');
                 }
             };
 
-            var clickPath = function () {
+            var clickPath = function clickPath() {
                 if (toolButtonClick('#tool_path')) {
                     svgCanvas.setMode('path');
                 }
             };
 
-                // Delete is a contextual tool that only appears in the ribbon if
-                // an element has been selected
-            var deleteSelected = function () {
+            // Delete is a contextual tool that only appears in the ribbon if
+            // an element has been selected
+            var deleteSelected = function deleteSelected() {
                 if (selectedElement != null || multiselected) {
                     svgCanvas.deleteSelectedElements();
                 }
             };
 
-            var cutSelected = function () {
+            var cutSelected = function cutSelected() {
                 if (selectedElement != null || multiselected) {
                     svgCanvas.cutSelectedElements();
                 }
             };
 
-            var copySelected = function () {
+            var copySelected = function copySelected() {
                 if (selectedElement != null || multiselected) {
                     svgCanvas.copySelectedElements();
                 }
             };
 
-            var pasteInCenter = function () {
+            var pasteInCenter = function pasteInCenter() {
                 var zoom = svgCanvas.getZoom();
                 var x = (workarea[0].scrollLeft + workarea.width() / 2) / zoom - svgCanvas.contentW;
                 var y = (workarea[0].scrollTop + workarea.height() / 2) / zoom - svgCanvas.contentH;
                 svgCanvas.pasteElements('point', x, y);
             };
 
-            var moveToTopSelected = function () {
+            var moveToTopSelected = function moveToTopSelected() {
                 if (selectedElement != null) {
                     svgCanvas.moveToTopSelectedElement();
                 }
             };
 
-            var moveToBottomSelected = function () {
+            var moveToBottomSelected = function moveToBottomSelected() {
                 if (selectedElement != null) {
                     svgCanvas.moveToBottomSelectedElement();
                 }
             };
 
-            var moveUpDownSelected = function (dir) {
+            var moveUpDownSelected = function moveUpDownSelected(dir) {
                 if (selectedElement != null) {
                     svgCanvas.moveUpDownSelected(dir);
                 }
             };
 
-            var convertToPath = function () {
+            var convertToPath = function convertToPath() {
                 if (selectedElement != null) {
                     svgCanvas.convertToPath();
                 }
             };
 
-            var reorientPath = function () {
+            var reorientPath = function reorientPath() {
                 if (selectedElement != null) {
                     path.reorient();
                 }
             };
 
-            var makeHyperlink = function () {
+            var makeHyperlink = function makeHyperlink() {
                 if (selectedElement != null || multiselected) {
                     $.prompt(uiStrings.notification.enterNewLinkURL, 'http://', function (url) {
                         if (url) {
@@ -3734,7 +3660,7 @@ define([
                 }
             };
 
-            var moveSelected = function (dx, dy) {
+            var moveSelected = function moveSelected(dx, dy) {
                 if (selectedElement != null || multiselected) {
                     if (curConfig.gridSnapping) {
                         // Use grid snap value regardless of zoom level
@@ -3746,44 +3672,44 @@ define([
                 }
             };
 
-            var linkControlPoints = function () {
+            var linkControlPoints = function linkControlPoints() {
                 $('#tool_node_link').toggleClass('push_button_pressed tool_button');
                 var linked = $('#tool_node_link').hasClass('push_button_pressed');
                 path.linkControlPoints(linked);
             };
 
-            var clonePathNode = function () {
+            var clonePathNode = function clonePathNode() {
                 if (path.getNodePoint()) {
                     path.clonePathNode();
                 }
             };
 
-            var deletePathNode = function () {
+            var deletePathNode = function deletePathNode() {
                 if (path.getNodePoint()) {
                     path.deletePathNode();
                 }
             };
 
-            var addSubPath = function () {
+            var addSubPath = function addSubPath() {
                 var button = $('#tool_add_subpath');
                 var sp = !button.hasClass('push_button_pressed');
                 button.toggleClass('push_button_pressed tool_button');
                 path.addSubPath(sp);
             };
 
-            var opencloseSubPath = function () {
+            var opencloseSubPath = function opencloseSubPath() {
                 path.opencloseSubPath();
             };
 
-            var selectNext = function () {
+            var selectNext = function selectNext() {
                 svgCanvas.cycleElement(1);
             };
 
-            var selectPrev = function () {
+            var selectPrev = function selectPrev() {
                 svgCanvas.cycleElement(0);
             };
 
-            var rotateSelected = function (cw, step) {
+            var rotateSelected = function rotateSelected(cw, step) {
                 if (selectedElement == null || multiselected) {
                     return;
                 }
@@ -3795,10 +3721,12 @@ define([
                 updateContextPanel();
             };
 
-            var clickClear = function() {
+            var clickClear = function clickClear() {
                 var dims = curConfig.dimensions;
-                $.confirm(uiStrings.notification.QwantToClear, function(ok) {
-                    if (!ok) {return;}
+                $.confirm(uiStrings.notification.QwantToClear, function (ok) {
+                    if (!ok) {
+                        return;
+                    }
                     setSelectMode();
                     svgCanvas.clear();
                     svgCanvas.setResolution(dims[0], dims[1]);
@@ -3813,19 +3741,19 @@ define([
 
             window.svgEditorClearScene = clickClear;
 
-            var clickBold = function () {
+            var clickBold = function clickBold() {
                 svgCanvas.setBold(!svgCanvas.getBold());
                 updateContextPanel();
                 return false;
             };
 
-            var clickItalic = function () {
+            var clickItalic = function clickItalic() {
                 svgCanvas.setItalic(!svgCanvas.getItalic());
                 updateContextPanel();
                 return false;
             };
 
-            var clickSave = function () {
+            var clickSave = function clickSave() {
                 // In the future, more options can be provided here
                 var saveOpts = {
                     'images': $.pref('img_save'),
@@ -3834,13 +3762,12 @@ define([
                 svgCanvas.save(saveOpts);
             };
 
-            var clickExport = function () {
+            var clickExport = function clickExport() {
                 $.select('Select an image type for export: ', [
-                    // See http://kangax.github.io/jstests/toDataUrl_mime_type_test/ for a useful list of MIME types and browser support
-                    // 'ICO', // Todo: Find a way to preserve transparency in SVG-Edit if not working presently and do full packaging for x-icon; then switch back to position after 'PNG'
-                    'PNG',
-                    'JPEG', 'BMP', 'WEBP', 'PDF'
-                ], function (imgType) { // todo: replace hard-coded msg with uiStrings.notification.
+                // See http://kangax.github.io/jstests/toDataUrl_mime_type_test/ for a useful list of MIME types and browser support
+                // 'ICO', // Todo: Find a way to preserve transparency in SVG-Edit if not working presently and do full packaging for x-icon; then switch back to position after 'PNG'
+                'PNG', 'JPEG', 'BMP', 'WEBP', 'PDF'], function (imgType) {
+                    // todo: replace hard-coded msg with uiStrings.notification.
                     if (!imgType) {
                         return;
                     }
@@ -3853,10 +3780,7 @@ define([
                             editor.exportWindowCt++;
                         }
                         exportWindowName = curConfig.canvasName + editor.exportWindowCt;
-                        exportWindow = window.open(
-                            'data:text/html;charset=utf-8,' + encodeURIComponent('<title>' + str + '</title><h1>' + str + '</h1>'),
-                            exportWindowName
-                        );
+                        exportWindow = window.open('data:text/html;charset=utf-8,' + encodeURIComponent('<title>' + str + '</title><h1>' + str + '</h1>'), exportWindowName);
                     }
                     if (imgType === 'PDF') {
                         if (!customExportPDF) {
@@ -3882,16 +3806,16 @@ define([
                 });
             };
 
-                // by default, svgCanvas.open() is a no-op.
-                // it is up to an extension mechanism (opera widget, etc)
-                // to call setCustomHandlers() which will make it do something
-            var clickOpen = function () {
+            // by default, svgCanvas.open() is a no-op.
+            // it is up to an extension mechanism (opera widget, etc)
+            // to call setCustomHandlers() which will make it do something
+            var clickOpen = function clickOpen() {
                 svgCanvas.open();
             };
 
-            var clickImport = function () { };
+            var clickImport = function clickImport() {};
 
-            var clickUndo = function () {
+            var clickUndo = function clickUndo() {
                 if (undoMgr.getUndoStackSize() > 0) {
                     undoMgr.undo();
                     populateLayers();
@@ -3900,34 +3824,34 @@ define([
             window.svgeditorClickUndo = clickUndo;
             //hack QQ. to let svgeditor-function-wrapper get this function
 
-            var clickRedo = function () {
+            var clickRedo = function clickRedo() {
                 if (undoMgr.getRedoStackSize() > 0) {
                     undoMgr.redo();
                     populateLayers();
                 }
             };
 
-            var clickGroup = function () {
+            var clickGroup = function clickGroup() {
                 // group
                 if (multiselected) {
                     svgCanvas.groupSelectedElements();
                 }
                 // ungroup
                 else if (selectedElement) {
-                    svgCanvas.ungroupSelectedElement();
-                }
+                        svgCanvas.ungroupSelectedElement();
+                    }
             };
 
-            var clickClone = function () {
+            var clickClone = function clickClone() {
                 svgCanvas.cloneSelectedElements(20, 20);
             };
 
-            var clickAlign = function () {
+            var clickAlign = function clickAlign() {
                 var letter = this.id.replace('tool_align', '').charAt(0);
                 svgCanvas.alignSelectedElements(letter, $('#align_relative_to').val());
             };
 
-            var clickWireframe = function () {
+            var clickWireframe = function clickWireframe() {
                 $('#tool_wireframe').toggleClass('push_button_pressed tool_button');
                 workarea.toggleClass('wireframe');
 
@@ -3949,7 +3873,7 @@ define([
                 containment: 'window'
             });
 
-            var showDocProperties = function () {
+            var showDocProperties = function showDocProperties() {
                 if (docprops) {
                     return;
                 }
@@ -3972,7 +3896,7 @@ define([
                 $('#svg_docprops').show();
             };
 
-            var showPreferences = function () {
+            var showPreferences = function showPreferences() {
                 if (preferences) {
                     return;
                 }
@@ -4005,18 +3929,18 @@ define([
                 $('#svg_prefs').show();
             };
 
-            var hideSourceEditor = function () {
+            var hideSourceEditor = function hideSourceEditor() {
                 $('#svg_source_editor').hide();
                 editingsource = false;
                 $('#svg_source_textarea').blur();
             };
 
-            var saveSourceEditor = function () {
+            var saveSourceEditor = function saveSourceEditor() {
                 if (!editingsource) {
                     return;
                 }
 
-                var saveChanges = function () {
+                var saveChanges = function saveChanges() {
                     svgCanvas.clearSelection();
                     hideSourceEditor();
                     unzoom();
@@ -4038,7 +3962,7 @@ define([
                 setSelectMode();
             };
 
-            var hideDocProperties = function () {
+            var hideDocProperties = function hideDocProperties() {
                 $('#svg_docprops').hide();
                 $('#canvas_width,#canvas_height').removeAttr('disabled');
                 $('#resolution')[0].selectedIndex = 0;
@@ -4046,12 +3970,12 @@ define([
                 docprops = false;
             };
 
-            var hidePreferences = function () {
+            var hidePreferences = function hidePreferences() {
                 $('#svg_prefs').hide();
                 preferences = false;
             };
 
-            var saveDocProperties = function () {
+            var saveDocProperties = function saveDocProperties() {
                 // set title
                 var newTitle = $('#canvas_title').val();
                 updateTitle(newTitle);
@@ -4124,7 +4048,7 @@ define([
 
             var resetScrollPos = $.noop;
 
-            var cancelOverlays = function () {
+            var cancelOverlays = function cancelOverlays() {
                 $('#dialog_box').hide();
                 if (!editingsource && !docprops && !preferences) {
                     if (cur_context) {
@@ -4176,7 +4100,6 @@ define([
                         $('#ruler_y')[0].scrollTop = workarea[0].scrollTop - workarea[0].offsetTop;
                     }
                 });
-
             })();
 
             $('#url_notice').click(function () {
@@ -4229,51 +4152,44 @@ define([
 
             // TODO: go back to the color boxes having white background-color and then setting
             //	background-image to none.png (otherwise partially transparent gradients look weird)
-            var colorPicker = function (elem) {
+            var colorPicker = function colorPicker(elem) {
                 var picker = elem.attr('id') === 'stroke_color' ? 'stroke' : 'fill';
                 //				var opacity = (picker === 'stroke' ? $('#stroke_opacity') : $('#fill_opacity'));
                 var paint = paintBox[picker].paint;
-                var title = (picker === 'stroke' ? 'Pick a Stroke Paint and Opacity' : 'Pick a Fill Paint and Opacity');
+                var title = picker === 'stroke' ? 'Pick a Stroke Paint and Opacity' : 'Pick a Fill Paint and Opacity';
                 // var was_none = false; // Currently unused
                 var pos = elem.offset();
-                $('#color_picker')
-                    .draggable({
-                        cancel: '.jGraduate_tabs, .jGraduate_colPick, .jGraduate_gradPick, .jPicker',
-                        containment: 'window'
-                    })
-                    .css(curConfig.colorPickerCSS || {
-                        'left': pos.left - 140,
-                        'bottom': 40
-                    })
-                    .jGraduate({
-                        paint: paint,
-                        window: {
-                            pickerTitle: title
-                        },
-                        images: {
-                            clientPath: curConfig.jGraduatePath
-                        },
-                        newstop: 'inverse'
+                $('#color_picker').draggable({
+                    cancel: '.jGraduate_tabs, .jGraduate_colPick, .jGraduate_gradPick, .jPicker',
+                    containment: 'window'
+                }).css(curConfig.colorPickerCSS || {
+                    'left': pos.left - 140,
+                    'bottom': 40
+                }).jGraduate({
+                    paint: paint,
+                    window: {
+                        pickerTitle: title
                     },
-                    function (p) {
-                        paint = new $.jGraduate.Paint(p);
-                        paintBox[picker].setPaint(paint);
-                        svgCanvas.setPaint(picker, paint);
-                        $('#color_picker').hide();
+                    images: {
+                        clientPath: curConfig.jGraduatePath
                     },
-                    function () {
-                        $('#color_picker').hide();
-                    });
+                    newstop: 'inverse'
+                }, function (p) {
+                    paint = new $.jGraduate.Paint(p);
+                    paintBox[picker].setPaint(paint);
+                    svgCanvas.setPaint(picker, paint);
+                    $('#color_picker').hide();
+                }, function () {
+                    $('#color_picker').hide();
+                });
             };
 
-            var PaintBox = function (container, type) {
-                var paintColor, paintOpacity,
+            var PaintBox = function PaintBox(container, type) {
+                var paintColor,
+                    paintOpacity,
                     cur = curConfig[type === 'fill' ? 'initFill' : 'initStroke'];
-                    // set up gradients to be used for the buttons
-                var svgdocbox = new DOMParser().parseFromString(
-                    '<svg xmlns="http://www.w3.org/2000/svg"><rect width="16.5" height="16.5"' +
-                        '					fill="#' + cur.color + '" opacity="' + cur.opacity + '"/>' +
-                        '					<defs><linearGradient id="gradbox_"/></defs></svg>', 'text/xml');
+                // set up gradients to be used for the buttons
+                var svgdocbox = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><rect width="16.5" height="16.5"' + '					fill="#' + cur.color + '" opacity="' + cur.opacity + '"/>' + '					<defs><linearGradient id="gradbox_"/></defs></svg>', 'text/xml');
                 var docElem = svgdocbox.documentElement;
 
                 docElem = $(container)[0].appendChild(document.importNode(docElem, true));
@@ -4296,7 +4212,7 @@ define([
 
                     switch (ptype) {
                         case 'solidColor':
-                            fillAttr = (paint[ptype] !== 'none') ? '#' + paint[ptype] : paint[ptype];
+                            fillAttr = paint[ptype] !== 'none' ? '#' + paint[ptype] : paint[ptype];
                             break;
                         case 'linearGradient':
                         case 'radialGradient':
@@ -4399,7 +4315,7 @@ define([
             // Use this SVG elem to test vectorEffect support
             var testEl = paintBox.fill.rect.cloneNode(false);
             testEl.setAttribute('style', 'vector-effect:non-scaling-stroke');
-            supportsNonSS = (testEl.style.vectorEffect === 'non-scaling-stroke');
+            supportsNonSS = testEl.style.vectorEffect === 'non-scaling-stroke';
             testEl.removeAttribute('style');
             var svgdocbox = paintBox.fill.rect.ownerDocument;
             // Use this to test support for blur element. Seems to work to test support in Webkit
@@ -4482,7 +4398,7 @@ define([
                 var uniqName,
                     i = svgCanvas.getCurrentDrawing().getNumLayers();
                 do {
-                    uniqName = uiStrings.layers.layer + ' ' + (++i);
+                    uniqName = uiStrings.layers.layer + ' ' + ++i;
                 } while (svgCanvas.getCurrentDrawing().hasLayer(uniqName));
 
                 $.prompt(uiStrings.notification.enterUniqueLayerName, uniqName, function (newName) {
@@ -4507,7 +4423,7 @@ define([
             }
 
             function cloneLayer() {
-                const oldName = svgCanvas.getCurrentDrawing().getCurrentLayerName();
+                var oldName = svgCanvas.getCurrentDrawing().getCurrentLayerName();
                 var name = oldName + ' copy';
 
                 $.prompt(uiStrings.notification.enterUniqueLayerName, name, function (newName) {
@@ -4579,7 +4495,7 @@ define([
             //		setResolution(x * zoom, y * zoom);
             //	}
 
-            var centerCanvas = function () {
+            var centerCanvas = function centerCanvas() {
                 // this centers the canvas vertically in the workarea (horizontal handled in CSS)
                 workarea.css('line-height', workarea.height() + 'px');
             };
@@ -4645,93 +4561,82 @@ define([
             $('input,select').attr('autocomplete', 'off');
 
             // Associate all button actions as well as non-button keyboard shortcuts
-            Actions = (function () {
+            Actions = function () {
                 // sel:'selector', fn:function, evt:'event', key:[key, preventDefault, NoDisableInInput]
                 var tool_buttons = [{
                     sel: '#tool_select',
                     fn: clickSelect,
                     evt: 'click',
                     key: ['V', true]
-                },
-                {
+                }, {
                     sel: '#tool_fhpath',
                     fn: clickFHPath,
                     evt: 'click',
                     key: ['Q', true]
-                },
-                {
+                }, {
                     sel: '#tool_line',
                     fn: clickLine,
                     evt: 'click',
                     key: ['L', true]
-                },
-                {
+                }, {
                     sel: '#tool_rect',
                     fn: clickRect,
                     evt: 'mouseup',
                     key: ['R', true],
                     parent: '#tools_rect',
                     icon: 'rect'
-                },
-                {
+                }, {
                     sel: '#tool_square',
                     fn: clickSquare,
                     evt: 'mouseup',
                     parent: '#tools_rect',
                     icon: 'square'
-                },
-                {
+                }, {
                     sel: '#tool_fhrect',
                     fn: clickFHRect,
                     evt: 'mouseup',
                     parent: '#tools_rect',
                     icon: 'fh_rect'
-                },
-                {
+                }, {
                     sel: '#tool_ellipse',
                     fn: clickEllipse,
                     evt: 'mouseup',
                     key: ['E', true],
                     parent: '#tools_ellipse',
                     icon: 'ellipse'
-                },
-                {
+                }, {
                     sel: '#tool_circle',
                     fn: clickCircle,
                     evt: 'mouseup',
                     parent: '#tools_ellipse',
                     icon: 'circle'
-                },
-                {
+                }, {
                     sel: '#tool_fhellipse',
                     fn: clickFHEllipse,
                     evt: 'mouseup',
                     parent: '#tools_ellipse',
                     icon: 'fh_ellipse'
-                },
-                {
+                }, {
                     sel: '#tool_path',
                     fn: clickPath,
                     evt: 'mouseup',
                     parent: '#tool_path',
                     key: ['P', true]
-                },
-                {
+                }, {
                     sel: '#tool_text',
                     fn: clickText,
                     evt: 'click',
                     key: ['T', true]
-                },
-                {
+                }, {
                     sel: '#tool_image',
                     fn: clickImage,
                     evt: 'mouseup'
                 },
-                    // {sel: '#tool_zoom', fn: clickZoom, evt: 'mouseup', key: ['Z', true]},
-                    // {sel: '#tool_clear', fn: clickClear, evt: 'mouseup', key: ['N', true]},
+                // {sel: '#tool_zoom', fn: clickZoom, evt: 'mouseup', key: ['Z', true]},
+                // {sel: '#tool_clear', fn: clickClear, evt: 'mouseup', key: ['N', true]},
                 {
                     sel: '#tool_save',
-                    fn: function () {
+                    fn: function fn() {
                         if (editingsource) {
                             saveSourceEditor();
                         } else {
@@ -4739,209 +4644,147 @@ define([
                         }
                     },
                     evt: 'mouseup'
-                },
-                {
+                }, {
                     sel: '#tool_export',
                     fn: clickExport,
                     evt: 'mouseup'
-                },
-                {
+                }, {
                     sel: '#tool_open',
                     fn: clickOpen,
                     evt: 'mouseup'
-                },
-                {
+                }, {
                     sel: '#tool_import',
                     fn: clickImport,
                     evt: 'mouseup'
-                },
-                {
+                }, {
                     sel: '#tool_source',
                     fn: showSourceEditor,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_wireframe',
                     fn: clickWireframe,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_source_cancel,.overlay,#tool_docprops_cancel,#tool_prefs_cancel',
                     fn: cancelOverlays,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_source_save',
                     fn: saveSourceEditor,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_docprops_save',
                     fn: saveDocProperties,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_docprops',
                     fn: showDocProperties,
                     evt: 'mouseup'
-                },
-                {
+                }, {
                     sel: '#tool_prefs_save',
                     fn: savePreferences,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_prefs_option',
-                    fn: function () {
+                    fn: function fn() {
                         showPreferences();
                         return false;
                     },
                     evt: 'mouseup'
-                },
-                {
+                }, {
                     sel: '#tool_delete,#tool_delete_multi',
                     fn: deleteSelected,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_reorient',
                     fn: reorientPath,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_node_link',
                     fn: linkControlPoints,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_node_clone',
                     fn: clonePathNode,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_node_delete',
                     fn: deletePathNode,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_openclose_path',
                     fn: opencloseSubPath,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_add_subpath',
                     fn: addSubPath,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_move_top',
                     fn: moveToTopSelected,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_move_bottom',
                     fn: moveToBottomSelected,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_topath',
                     fn: convertToPath,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_make_link,#tool_make_link_multi',
                     fn: makeHyperlink,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_undo',
                     fn: clickUndo,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_redo',
                     fn: clickRedo,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_clone,#tool_clone_multi',
                     fn: clickClone,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_group_elements',
                     fn: clickGroup,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_ungroup',
                     fn: clickGroup,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_unlink_use',
                     fn: clickGroup,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '[id^=tool_align]',
                     fn: clickAlign,
                     evt: 'click'
-                },
-                {
+                }, {
                     sel: '#tool_bold',
                     fn: clickBold,
                     evt: 'mousedown'
-                },
-                {
+                }, {
                     sel: '#tool_italic',
                     fn: clickItalic,
                     evt: 'mousedown'
-                },
-                {
+                }, {
                     sel: '#copy_save_done',
                     fn: cancelOverlays,
                     evt: 'click'
-                },
+                }];
 
-                    // Shortcuts not associated with buttons
-
-                    // {key: 'ctrl+left', fn: function(){rotateSelected(0,1);}},
-                    // {key: 'ctrl+right', fn: function(){rotateSelected(1,1);}},
-                    // {key: 'ctrl+shift+left', fn: function(){rotateSelected(0,5);}},
-                    // {key: 'ctrl+shift+right', fn: function(){rotateSelected(1,5);}},
-                    // {key: 'shift+O', fn: selectPrev},
-                    // {key: 'shift+P', fn: selectNext},
-                    // {key: [modKey+'up', true], fn: function(){zoomImage(2);}},
-                    // {key: [modKey+'down', true], fn: function(){zoomImage(0.5);}},
-                    // {key: [modKey+']', true], fn: function(){moveUpDownSelected('Up');}},
-                    // {key: [modKey+'[', true], fn: function(){moveUpDownSelected('Down');}},
-                    // {key: ['up', true], fn: function(){moveSelected(0,-1);}},
-                    // {key: ['down', true], fn: function(){moveSelected(0,1);}},
-                    // {key: ['left', true], fn: function(){moveSelected(-1,0);}},
-                    // {key: ['right', true], fn: function(){moveSelected(1,0);}},
-                    // {key: 'shift+up', fn: function(){moveSelected(0,-10);}},
-                    // {key: 'shift+down', fn: function(){moveSelected(0,10);}},
-                    // {key: 'shift+left', fn: function(){moveSelected(-10,0);}},
-                    // {key: 'shift+right', fn: function(){moveSelected(10,0);}},
-                    // {key: ['alt+up', true], fn: function(){svgCanvas.cloneSelectedElements(0,-1);}},
-                    // {key: ['alt+down', true], fn: function(){svgCanvas.cloneSelectedElements(0,1);}},
-                    // {key: ['alt+left', true], fn: function(){svgCanvas.cloneSelectedElements(-1,0);}},
-                    // {key: ['alt+right', true], fn: function(){svgCanvas.cloneSelectedElements(1,0);}},
-                    // {key: ['alt+shift+up', true], fn: function(){svgCanvas.cloneSelectedElements(0,-10);}},
-                    // {key: ['alt+shift+down', true], fn: function(){svgCanvas.cloneSelectedElements(0,10);}},
-                    // {key: ['alt+shift+left', true], fn: function(){svgCanvas.cloneSelectedElements(-10,0);}},
-                    // {key: ['alt+shift+right', true], fn: function(){svgCanvas.cloneSelectedElements(10,0);}},
-                ];
-
-                    // Tooltips not directly associated with a single function
+                // Tooltips not directly associated with a single function
                 var key_assocs = {
                     '4/Shift+4': '#tools_rect_show',
                     '5/Shift+5': '#tools_ellipse_show'
                 };
 
                 return {
-                    setAll: function () {
+                    setAll: function setAll() {
                         var flyouts = {};
 
                         $.each(tool_buttons, function (i, opts) {
@@ -4987,8 +4830,7 @@ define([
                                         keyval = opts.key;
                                     }
                                     keyval += '';
-
-                                    $.each(keyval.split('/'), function(i, key) {
+                                     $.each(keyval.split('/'), function(i, key) {
                                         $(document).bind('keydown', key, function(e) {
                                             fn();
                                             if (pd) {
@@ -4998,8 +4840,7 @@ define([
                                             // return false; //return false in jquery do both preventDefault and stopPropogation
                                         });
                                     });
-
-                                    // Put shortcut in title
+                                     // Put shortcut in title
                                     if (opts.sel && !opts.hidekey && btn.attr('title')) {
                                         var newTitle = btn.attr('title').split('[')[0] + ' (' + keyval + ')';
                                         key_assocs[keyval] = opts.sel;
@@ -5017,7 +4858,7 @@ define([
                         Shortcuts.on(['fnkey', 'x'], cutSelected);
                         Shortcuts.on(['fnkey', 'c'], copySelected);
                         Shortcuts.on(['fnkey', 'v'], pasteInCenter);
-                        Shortcuts.on(['fnkey', 'shift', 'v'], () => {
+                        Shortcuts.on(['fnkey', 'shift', 'v'], function () {
                             svgCanvas.pasteElements('in_place');
                         });
                         //Shortcuts.on(['fnkey', 'z'], clickUndo);
@@ -5027,30 +4868,30 @@ define([
                             Shortcuts.on(['ctrl', 'y'], clickRedo);
                         }
                         //Shortcuts.on(['fnkey', 'd'], clickClone);
-                        Shortcuts.on(['fnkey', 'a'], (e) => {
+                        Shortcuts.on(['fnkey', 'a'], function (e) {
                             e.preventDefault();
                             e.stopPropagation();
                             svgCanvas.selectAllInCurrentLayer();
                         });
-                        Shortcuts.on(['up'], () => {
+                        Shortcuts.on(['up'], function () {
                             moveSelected(0, -1);
                         });
-                        Shortcuts.on(['down'], () => {
+                        Shortcuts.on(['down'], function () {
                             moveSelected(0, 1);
                         });
-                        Shortcuts.on(['left'], () => {
+                        Shortcuts.on(['left'], function () {
                             moveSelected(-1, 0);
                         });
-                        Shortcuts.on(['right'], () => {
+                        Shortcuts.on(['right'], function () {
                             moveSelected(1, 0);
                         });
                         // -
-                        Shortcuts.on(['plus'], () => {
+                        Shortcuts.on(['plus'], function () {
                             console.log('on plus');
                             window.polygonAddSides();
                         });
                         // +
-                        Shortcuts.on(['minus'], () => {
+                        Shortcuts.on(['minus'], function () {
                             console.log('on minus');
                             window.polygonDecreaseSides();
                         });
@@ -5062,12 +4903,10 @@ define([
                         // Misc additional actions
 
                         // Make 'return' keypress trigger the change event
-                        $('.attr_changer, #image_url').bind('keydown', 'return',
-                            function (evt) {
-                                $(this).change();
-                                evt.preventDefault();
-                            }
-                        );
+                        $('.attr_changer, #image_url').bind('keydown', 'return', function (evt) {
+                            $(this).change();
+                            evt.preventDefault();
+                        });
 
                         // $(window).bind('keydown', 'tab', function(e) {
                         // 	if (ui_context === 'canvas') {
@@ -5080,11 +4919,10 @@ define([
                         // 		selectPrev();
                         // 	}
                         // });
-
                     },
-                    setTitles: function () {
+                    setTitles: function setTitles() {
                         $.each(key_assocs, function (keyval, sel) {
-                            var menu = ($(sel).parents('#main_menu').length);
+                            var menu = $(sel).parents('#main_menu').length;
 
                             $(sel).each(function () {
                                 var t;
@@ -5112,7 +4950,7 @@ define([
                             });
                         });
                     },
-                    getButtonData: function (sel) {
+                    getButtonData: function getButtonData(sel) {
                         var b;
                         $.each(tool_buttons, function (i, btn) {
                             if (btn.sel === sel) {
@@ -5122,7 +4960,7 @@ define([
                         return b;
                     }
                 };
-            })();
+            }();
 
             Actions.setAll();
 
@@ -5212,8 +5050,7 @@ define([
             $('#workarea').contextMenu({
                 menu: 'cmenu_canvas',
                 inSpeed: 0
-            },
-            function (action, el, pos) {
+            }, function (action, el, pos) {
                 switch (action) {
                     case 'delete':
                         deleteSelected();
@@ -5258,10 +5095,9 @@ define([
                 if (svgCanvas.clipBoard.length) {
                     canv_menu.enableContextMenuItems('#paste,#paste_in_place');
                 }
-            }
-            );
+            });
 
-            var lmenu_func = function (action, el, pos) {
+            var lmenu_func = function lmenu_func(action, el, pos) {
                 switch (action) {
                     case 'dupe':
                         cloneLayer();
@@ -5280,17 +5116,13 @@ define([
             $('#layerlist').contextMenu({
                 menu: 'cmenu_layers',
                 inSpeed: 0
-            },
-            lmenu_func
-            );
+            }, lmenu_func);
 
             $('#layer_moreopts').contextMenu({
                 menu: 'cmenu_layers',
                 inSpeed: 0,
                 allowLeft: true
-            },
-            lmenu_func
-            );
+            }, lmenu_func);
 
             $('.contextMenu li').mousedown(function (ev) {
                 ev.preventDefault();
@@ -5343,9 +5175,13 @@ define([
             // and provide a file input to click. When that change event fires, it will
             // get the text contents of the file and send it to the canvas
             if (window.FileReader) {
-                function readImage(file, scale = 1, offset = null) {
-                    return new Promise((resolve, reject) => {
-                        var defaultX = 0, defaultY = 0;
+                var readImage = function readImage(file) {
+                    var scale = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+                    var offset = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+
+                    return new Promise(function (resolve, reject) {
+                        var defaultX = 0,
+                            defaultY = 0;
                         if (offset) {
                             defaultX = offset[0];
                             defaultY = offset[1];
@@ -5353,7 +5189,7 @@ define([
                         reader = new FileReader();
                         reader.onloadend = function (e) {
                             // let's insert the new image until we know its dimensions
-                            var insertNewImage = function (img, width, height) {
+                            var insertNewImage = function insertNewImage(img, width, height) {
                                 var newImage = svgCanvas.addSvgElementFromJson({
                                     element: 'image',
                                     attr: {
@@ -5370,21 +5206,19 @@ define([
                                     }
                                 });
 
-                                ImageData(
-                                    newImage.getAttribute('origImage'), {
-                                        height: height,
-                                        width: width,
-                                        grayscale: {
-                                            is_rgba: true,
-                                            is_shading: false,
-                                            threshold: parseInt(newImage.getAttribute('data-threshold')),
-                                            is_svg: false
-                                        },
-                                        onComplete: function (result) {
-                                            svgCanvas.setHref(newImage, result.canvas.toDataURL());
-                                        }
+                                ImageData(newImage.getAttribute('origImage'), {
+                                    height: height,
+                                    width: width,
+                                    grayscale: {
+                                        is_rgba: true,
+                                        is_shading: false,
+                                        threshold: parseInt(newImage.getAttribute('data-threshold')),
+                                        is_svg: false
+                                    },
+                                    onComplete: function onComplete(result) {
+                                        svgCanvas.setHref(newImage, result.canvas.toDataURL());
                                     }
-                                );
+                                });
 
                                 svgCanvas.selectOnly([newImage]);
                                 if (!offset) {
@@ -5395,7 +5229,7 @@ define([
                                 updateContextPanel();
                                 $('#dialog_box').hide();
                             };
-                                // create dummy img so we know the default dimensions
+                            // create dummy img so we know the default dimensions
                             var imgWidth = 100;
                             var imgHeight = 100;
                             var img = new Image();
@@ -5410,17 +5244,19 @@ define([
                         };
                         reader.readAsArrayBuffer(file);
                     });
-                }
-                function getBasename(path) {
-                    const pathMatch = path.match(/(.+)[\/\\].+/);
+                };
+
+                var getBasename = function getBasename(path) {
+                    var pathMatch = path.match(/(.+)[\/\\].+/);
                     if (pathMatch[1]) return pathMatch[1];
                     return "";
-                }
-                function readSVG(blob, type) {
-                    return new Promise((resolve, reject) => {
+                };
+
+                var readSVG = function readSVG(blob, type) {
+                    return new Promise(function (resolve, reject) {
                         var reader = new FileReader();
                         reader.onloadend = function (e) {
-                            let svgString = e.target.result;
+                            var svgString = e.target.result;
 
                             if (blob.path) {
                                 svgString = svgString.replace('xlink:href="../', 'xlink:href="' + getBasename(blob.path) + '/../');
@@ -5428,18 +5264,17 @@ define([
                             }
 
                             if (svgString.indexOf('<![CDATA[') > -1) {
-                                const indexLeft = svgString.indexOf('<![CDATA[');
-                                const indexRight = svgString.indexOf(']]>');
+                                var indexLeft = svgString.indexOf('<![CDATA[');
+                                var indexRight = svgString.indexOf(']]>');
 
-                                svgString = svgString.substr(0, indexLeft) + svgString.substring(indexLeft+9, indexRight) + svgString.substr(indexRight + 3);
+                                svgString = svgString.substr(0, indexLeft) + svgString.substring(indexLeft + 9, indexRight) + svgString.substr(indexRight + 3);
                             }
 
-
                             if (svgString.indexOf('<switch>') > -1) {
-                                const indexLeft = svgString.indexOf('<switch>');
-                                const indexRight = svgString.indexOf('</switch>');
+                                var _indexLeft = svgString.indexOf('<switch>');
+                                var _indexRight = svgString.indexOf('</switch>');
 
-                                svgString = svgString.substr(0, indexLeft) + svgString.substring(indexLeft+8, indexRight) + svgString.substr(indexRight+9);
+                                svgString = svgString.substr(0, _indexLeft) + svgString.substring(_indexLeft + 8, _indexRight) + svgString.substr(_indexRight + 9);
                             }
 
                             if (type !== 'color') {
@@ -5449,11 +5284,11 @@ define([
 
                             // Insert CSS style into the node
                             if (type === 'layer') {
-                                const indexStyle = svgString.indexOf('<style');
+                                var indexStyle = svgString.indexOf('<style');
 
                                 if (indexStyle > -1) {
-                                    const styleString = svgString.slice(indexStyle, svgString.indexOf('/style>'));
-                                    let classPrefix = '';
+                                    var styleString = svgString.slice(indexStyle, svgString.indexOf('/style>'));
+                                    var classPrefix = '';
 
                                     if (styleString.indexOf('.st') > -1) {
                                         classPrefix = 'st';
@@ -5464,33 +5299,33 @@ define([
                                     }
 
                                     if (classPrefix !== '') {
-                                        let styleStrings = [];
-                                        let index = (classPrefix === 'st' ? 0 : 1);
+                                        var styleStrings = [];
+                                        var _index = classPrefix === 'st' ? 0 : 1;
 
-                                        while(true) {
-                                            const splitStyleString = styleString.split(`.${classPrefix}${index}`);
-                                            let classStyle = 'style="';
+                                        while (true) {
+                                            var splitStyleString = styleString.split('.' + classPrefix + _index);
+                                            var classStyle = 'style="';
 
                                             if (splitStyleString.length === 1) {
                                                 break;
                                             }
 
-                                            for (let i = 1; i < splitStyleString.length; i++) {
-                                                const leftBrace = splitStyleString[i].indexOf('{') + 1;
-                                                const rightBrace = splitStyleString[i].indexOf('}');
-                                                const style = `${splitStyleString[i].slice(leftBrace, rightBrace).trim()}`;
+                                            for (var _i3 = 1; _i3 < splitStyleString.length; _i3++) {
+                                                var leftBrace = splitStyleString[_i3].indexOf('{') + 1;
+                                                var rightBrace = splitStyleString[_i3].indexOf('}');
+                                                var style = '' + splitStyleString[_i3].slice(leftBrace, rightBrace).trim();
 
                                                 classStyle += style;
                                             }
 
                                             classStyle += '"';
-                                            styleStrings[index] = classStyle;
-                                            index += 1;
+                                            styleStrings[_index] = classStyle;
+                                            _index += 1;
                                         }
 
-                                        for (let i = (classPrefix === 'st' ? 0 : 1); i < styleStrings.length; i++) {
-                                            const className = `class="${classPrefix}${i}"`;
-                                            const split = svgString.split(className);
+                                        for (var _i4 = classPrefix === 'st' ? 0 : 1; _i4 < styleStrings.length; _i4++) {
+                                            var className = 'class="' + classPrefix + _i4 + '"';
+                                            var split = svgString.split(className);
 
                                             if (split.length === 1) {
                                                 continue;
@@ -5498,16 +5333,16 @@ define([
 
                                             svgString = split[0];
 
-                                            for (let j = 1; j < split.length; j++) {
-                                                svgString += `${styleStrings[i]}${split[j]}`;
+                                            for (var j = 1; j < split.length; j++) {
+                                                svgString += '' + styleStrings[_i4] + split[j];
                                             }
                                         }
                                     }
                                 }
                             }
 
-                            const modifiedSvgString = svgString.replace(/fill(: ?#(fff(fff)?|FFF(FFF)?));/g, 'fill: none;').replace(/fill= ?"#(fff(fff)?|FFF(FFF))"/g, 'fill="none"');
-                            const newElement = svgCanvas.importSvgString(modifiedSvgString, type);
+                            var modifiedSvgString = svgString.replace(/fill(: ?#(fff(fff)?|FFF(FFF)?));/g, 'fill: none;').replace(/fill= ?"#(fff(fff)?|FFF(FFF))"/g, 'fill="none"');
+                            var newElement = svgCanvas.importSvgString(modifiedSvgString, type);
 
                             svgCanvas.ungroupSelectedElement();
                             svgCanvas.ungroupSelectedElement();
@@ -5517,7 +5352,7 @@ define([
                             // highlight imported element, otherwise we get strange empty selectbox
                             try {
                                 svgCanvas.selectOnly([newElement]);
-                            } catch(e) {
+                            } catch (e) {
                                 console.warn('Reading empty SVG');
                             }
                             // svgCanvas.ungroupSelectedElement(); //for flatten symbols (convertToGroup)
@@ -5526,12 +5361,13 @@ define([
                         };
                         reader.readAsText(blob);
                     });
-                }
-                const importSvg = file => {
+                };
+
+                var importSvg = function importSvg(file) {
                     svgCanvas.setLatestImportFileName(file.name.split('.')[0]);
                     async function importAs(type) {
                         await svgWebSocket.uploadPlainSVG(file);
-                        const outputs = await svgWebSocket.divideSVG();
+                        var outputs = await svgWebSocket.divideSVG();
 
                         if (type === 'color') {
                             await readSVG(outputs['strokes'], type);
@@ -5542,7 +5378,7 @@ define([
                         }
 
                         if (outputs['bitmap'].size > 0) {
-                            const layerName = LANG.right_panel.layer_panel.layer_bitmap;
+                            var layerName = LANG.right_panel.layer_panel.layer_bitmap;
 
                             if (!svgCanvas.setCurrentLayer(layerName)) {
                                 svgCanvas.createLayer(layerName);
@@ -5552,79 +5388,62 @@ define([
                         }
                     }
 
-                    AlertActions.showPopupCustomGroup(
-                        'confirm_mouse_input_device',
-                        LANG.popup.select_import_method,
-                        [LANG.popup.layer_by_layer, LANG.popup.layer_by_color, LANG.popup.nolayer],
-                        '',
-                        '',
-                        [
-                            () => {
-                                importAs('layer');
-                            },
-                            () => {
-                                importAs('color');
-                            },
-                            () => {
-                                importAs('nolayer');
-                            }
-                        ]
-                    );
+                    AlertActions.showPopupCustomGroup('confirm_mouse_input_device', LANG.popup.select_import_method, [LANG.popup.layer_by_layer, LANG.popup.layer_by_color, LANG.popup.nolayer], '', '', [function () {
+                        importAs('layer');
+                    }, function () {
+                        importAs('color');
+                    }, function () {
+                        importAs('nolayer');
+                    }]);
                 };
-                const importBitmap = file => {
+                var importBitmap = function importBitmap(file) {
                     svgCanvas.setLatestImportFileName(file.name.split('.')[0]);
                     readImage(file);
                 };
-                const importDxf = async file => {
-                    let defaultDpiValue = 25.4;
-                    const parsedSvg = await new Promise(resolve => {
-                        const reader = new FileReader();
-                        reader.onloadend = evt => {
-                            const parsed = Dxf2Svg.parseString(evt.target.result);
+                var importDxf = async function importDxf(file) {
+                    var defaultDpiValue = 25.4;
+                    var parsedSvg = await new Promise(function (resolve) {
+                        var reader = new FileReader();
+                        reader.onloadend = function (evt) {
+                            var parsed = Dxf2Svg.parseString(evt.target.result);
                             if (parsed.header.insunits == '1') {
                                 defaultDpiValue = 72;
                             }
-                            const svg = Dxf2Svg.toSVG(parsed);
+                            var svg = Dxf2Svg.toSVG(parsed);
                             resolve(svg);
                         };
                         reader.readAsText(file);
                     });
-                    const dpi = await new Promise((resolve, reject) => {
+                    var dpi = await new Promise(function (resolve, reject) {
                         // I would like to use jsx expression, but I don't know how to make jsx compatible with requirejs's shim and dep feature
-                        Announcement.post(
-                            React.createElement(
-                                DxfDpiSelector,
-                                {
-                                    defaultDpiValue: defaultDpiValue,
-                                    onSubmit: val => {
-                                        Announcement.unpost('DXF_DPI_SELECTOR');
-                                        resolve(val);
-                                    },
-                                    onCancel: () => {
-                                        Announcement.unpost('DXF_DPI_SELECTOR');
-                                        $('#dialog_box').hide();
-                                        reject();
-                                    }
-                                }
-                            ), 'DXF_DPI_SELECTOR',
-                            null
-                        );
+                        Announcement.post(React.createElement(DxfDpiSelector, {
+                            defaultDpiValue: defaultDpiValue,
+                            onSubmit: function onSubmit(val) {
+                                Announcement.unpost('DXF_DPI_SELECTOR');
+                                resolve(val);
+                            },
+                            onCancel: function onCancel() {
+                                Announcement.unpost('DXF_DPI_SELECTOR');
+                                $('#dialog_box').hide();
+                                reject();
+                            }
+                        }), 'DXF_DPI_SELECTOR', null);
                     });
 
-                    const resizedSvg = (function(){
-                        const xml = (new window.DOMParser()).parseFromString(parsedSvg, 'text/xml');
-                        const $svgBase = $(xml).find('svg');
-                        const originWidth = $svgBase.attr('width');
-                        const originHeight = $svgBase.attr('height');
+                    var resizedSvg = function () {
+                        var xml = new window.DOMParser().parseFromString(parsedSvg, 'text/xml');
+                        var $svgBase = $(xml).find('svg');
+                        var originWidth = $svgBase.attr('width');
+                        var originHeight = $svgBase.attr('height');
 
                         // 72 is default dpi which is the same as svgcanvas.importSvgString()
                         $svgBase.attr('width', originWidth * 72 / dpi);
                         $svgBase.attr('height', originHeight * 72 / dpi);
 
                         return new XMLSerializer().serializeToString($svgBase.get(0));
-                    })();
+                    }();
 
-                    const newElement = svgCanvas.importSvgString(resizedSvg, 'layer');
+                    var newElement = svgCanvas.importSvgString(resizedSvg, 'layer');
 
                     svgCanvas.ungroupSelectedElement();
                     svgCanvas.ungroupSelectedElement();
@@ -5644,27 +5463,31 @@ define([
                     $('#dialog_box').hide();
                 };
 
-                const importBvg = async (file) => {
-                    const parsedSvg = await new Promise(resolve => {
-                        const reader = new FileReader();
-                        reader.onloadend = (evt) => {
-                            let str = evt.target.result;
+                var importBvg = async function importBvg(file) {
+                    var parsedSvg = await new Promise(function (resolve) {
+                        var reader = new FileReader();
+                        reader.onloadend = function (evt) {
+                            var str = evt.target.result;
                             editor.loadFromString(str.replace(/STYLE>/g, 'style>'));
 
                             // loadFromString will lose data-xform and data-wireframe of `use` so set it back here
-                            if (typeof(str) === 'string') {
-                                let tmp = str.substr(str.indexOf('<use')).split('<use');
+                            if (typeof str === 'string') {
+                                var tmp = str.substr(str.indexOf('<use')).split('<use');
 
-                                for(let i = 1; i < tmp.length; ++i) {
-                                    let elem, match, id, wireframe, xform;
+                                for (var _i5 = 1; _i5 < tmp.length; ++_i5) {
+                                    var elem = void 0,
+                                        match = void 0,
+                                        id = void 0,
+                                        wireframe = void 0,
+                                        xform = void 0;
 
-                                    tmp[i] = tmp[i].substring(0, tmp[i].indexOf('/>'))
-                                    match = tmp[i].match(/id="svg_\d+"/)[0];
-                                    id = match.substring(match.indexOf('"')+1, match.lastIndexOf('"'));
-                                    match = tmp[i].match(/data-xform="[^"]*"/)[0];
-                                    xform = match.substring(match.indexOf('"')+1, match.lastIndexOf('"'));
-                                    match = tmp[i].match(/data-wireframe="[a-z]*"/)[0];
-                                    wireframe = match.substring(match.indexOf('"')+1, match.lastIndexOf('"'));
+                                    tmp[_i5] = tmp[_i5].substring(0, tmp[_i5].indexOf('/>'));
+                                    match = tmp[_i5].match(/id="svg_\d+"/)[0];
+                                    id = match.substring(match.indexOf('"') + 1, match.lastIndexOf('"'));
+                                    match = tmp[_i5].match(/data-xform="[^"]*"/)[0];
+                                    xform = match.substring(match.indexOf('"') + 1, match.lastIndexOf('"'));
+                                    match = tmp[_i5].match(/data-wireframe="[a-z]*"/)[0];
+                                    wireframe = match.substring(match.indexOf('"') + 1, match.lastIndexOf('"'));
 
                                     elem = document.getElementById(id);
                                     elem.setAttribute('data-xform', xform);
@@ -5676,18 +5499,18 @@ define([
                     });
                 };
 
-                var importImage = function (e) {
+                var importImage = function importImage(e) {
                     $.process_cancel(uiStrings.notification.loadingImage);
                     e.stopPropagation();
                     e.preventDefault();
                     $('#workarea').removeAttr('style');
                     $('#main_menu').hide();
-                    const file = (e.type === 'drop') ? e.dataTransfer.files[0] : this.files[0];
+                    var file = e.type === 'drop' ? e.dataTransfer.files[0] : this.files[0];
                     if (!file) {
                         $('#dialog_box').hide();
                         return;
                     }
-                    const fileType = (function() {
+                    var fileType = function () {
                         if (file.name.toLowerCase().includes('.bvg')) {
                             return 'bvg';
                         }
@@ -5701,11 +5524,11 @@ define([
                         if (file.name.toLowerCase().includes('.dxf')) {
                             return 'dxf';
                         }
-                        if (file.name.toLowerCase().endsWith('.ai') || (file.path && file.path.toLowerCase().endsWith('.ai'))) {
+                        if (file.name.toLowerCase().endsWith('.ai') || file.path && file.path.toLowerCase().endsWith('.ai')) {
                             return 'ai';
                         }
                         return 'unknown';
-                    })();
+                    }();
                     console.log("File type name:", fileType);
                     switch (fileType) {
                         case 'bvg':
@@ -5792,7 +5615,7 @@ define([
                 // var notif = allStrings.notification; // Currently unused
                 // $.extend will only replace the given strings
                 var oldLayerName = $('#layerlist tr.layersel td.layername').text();
-                var rename_layer = (oldLayerName === uiStrings.common.layer + ' 1');
+                var rename_layer = oldLayerName === uiStrings.common.layer + ' 1';
 
                 $.extend(uiStrings, allStrings);
                 svgCanvas.setUiStrings(allStrings);
@@ -5841,7 +5664,6 @@ define([
                 });
             };
 
-
             //initialize the view
             // zoomImage(0.2);
             //$('#fit_to_canvas').mouseup();
@@ -5855,13 +5677,13 @@ define([
 
             //greyscale all svgContent
             (function () {
-                const svgdoc = document.getElementById('svgcanvas').ownerDocument;
-                const greyscaleFilter = svgdoc.createElementNS(svgedit.NS.SVG, 'filter');
+                var svgdoc = document.getElementById('svgcanvas').ownerDocument;
+                var greyscaleFilter = svgdoc.createElementNS(svgedit.NS.SVG, 'filter');
                 svgCanvas.assignAttributes(greyscaleFilter, {
                     'id': 'greyscaleFilter'
                 });
 
-                const greyscaleMatrix = svgdoc.createElementNS(svgedit.NS.SVG, 'feColorMatrix');
+                var greyscaleMatrix = svgdoc.createElementNS(svgedit.NS.SVG, 'feColorMatrix');
                 svgCanvas.assignAttributes(greyscaleMatrix, {
                     type: 'matrix',
                     values: '0.3333 0.3333 0.3333 0  0\
@@ -5877,7 +5699,7 @@ define([
             })();
         };
 
-        editor.resetView = function() {
+        editor.resetView = function () {
             editor.zoomChanged(window, {
                 zoomLevel: 0.16
             });
@@ -5885,13 +5707,13 @@ define([
             $('#workarea')[0].scrollTop = svgCanvas.defaultScroll.y;
         };
 
-        editor.zoomIn = function() {
+        editor.zoomIn = function () {
             editor.zoomChanged(window, {
                 zoomLevel: svgCanvas.getZoom() * 1.1
             });
         };
 
-        editor.zoomOut = function() {
+        editor.zoomOut = function () {
             editor.zoomChanged(window, {
                 zoomLevel: svgCanvas.getZoom() / 1.1
             });
@@ -5914,7 +5736,7 @@ define([
 
         editor.loadFromString = function (str) {
             editor.ready(function () {
-                loadSvgString(str,function() {
+                loadSvgString(str, function () {
                     editor.resetView();
                 });
             });
@@ -5940,20 +5762,20 @@ define([
                     'url': url,
                     'dataType': 'text',
                     cache: !!cache,
-                    beforeSend: function () {
+                    beforeSend: function beforeSend() {
                         $.process_cancel(uiStrings.notification.loadingImage);
                     },
-                    success: function (str) {
+                    success: function success(str) {
                         loadSvgString(str, cb);
                     },
-                    error: function (xhr, stat, err) {
+                    error: function error(xhr, stat, err) {
                         if (xhr.status != 404 && xhr.responseText) {
                             loadSvgString(xhr.responseText, cb);
                         } else {
                             $.alert(uiStrings.notification.URLloadFail + ': \n' + err, cb);
                         }
                     },
-                    complete: function () {
+                    complete: function complete() {
                         $('#dialog_box').hide();
                     }
                 });
@@ -5990,10 +5812,9 @@ define([
         };
 
         return editor;
-    })(jQuery);
+    }(jQuery);
 
     // Run init once DOM is loaded
     // $(svgEditor.init);
     //replaced by componentDidMount()
-
 });

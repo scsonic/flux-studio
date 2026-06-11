@@ -1,48 +1,44 @@
-define([
-    'app/constants/global-constants',
-    'app/dispatcher/global-dispatcher'
-], function(
-    GlobalConstants,
-    Dispatcher
-) {
+'use strict';
+
+define(['app/constants/global-constants', 'app/dispatcher/global-dispatcher'], function (GlobalConstants, Dispatcher) {
     return {
-        showMonitor: function(printer, fcode, previewUrl, opener) {
+        showMonitor: function showMonitor(printer, fcode, previewUrl, opener) {
             Dispatcher.dispatch({
-                actionType: GlobalConstants.SHOW_MONITOR, printer, fcode, previewUrl, opener
+                actionType: GlobalConstants.SHOW_MONITOR, printer: printer, fcode: fcode, previewUrl: previewUrl, opener: opener
             });
         },
 
-        closeMonitor: function() {
+        closeMonitor: function closeMonitor() {
             Dispatcher.dispatch({
                 actionType: GlobalConstants.CLOSE_MONITOR
             });
         },
 
-        closeAllView: function() {
+        closeAllView: function closeAllView() {
             Dispatcher.dispatch({
                 actionType: GlobalConstants.CLOSE_ALL_VIEW
             });
         },
 
-        cancelPreview: function() {
+        cancelPreview: function cancelPreview() {
             Dispatcher.dispatch({
                 actionType: GlobalConstants.CANCEL_PREVIEW
             });
         },
 
-        sliceComplete: function(report) {
+        sliceComplete: function sliceComplete(report) {
             Dispatcher.dispatch({
-                actionType: GlobalConstants.SLICE_COMPLETE, report
+                actionType: GlobalConstants.SLICE_COMPLETE, report: report
             });
         },
 
-        monitorClosed: function() {
+        monitorClosed: function monitorClosed() {
             Dispatcher.dispatch({
                 actionType: GlobalConstants.MONITOR_CLOSED
             });
         },
 
-        resetDialogMenuIndex: function() {
+        resetDialogMenuIndex: function resetDialogMenuIndex() {
             Dispatcher.dispatch({
                 actionType: GlobalConstants.RESET_DIALOG_MENU_INDEX
             });

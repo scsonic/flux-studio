@@ -1,111 +1,113 @@
+'use strict';
+
 /**
  * API slicing
  * Ref: https://github.com/flux3dp/fluxghost/wiki/websocket-slicing
  */
-define([
-    'helpers/websocket',
-    'helpers/convertToTypedArray',
-    'helpers/is-json'
-], (Websocket, convertToTypedArray, isJSON) => {
+define(['helpers/websocket', 'helpers/convertToTypedArray', 'helpers/is-json'], function (Websocket, convertToTypedArray, isJSON) {
     'use strict';
-    return (opts) => {
+
+    return function (opts) {
 
         opts = opts || {};
-        opts.onError = opts.onError || function() {};
+        opts.onError = opts.onError || function () {};
 
-        let ws = new Websocket({
+        var ws = new Websocket({
 
-                method: '3dprint-slicing',
+            method: '3dprint-slicing',
 
-                onMessage: (data) => {
-                    events.onMessage(data);
-                    lastMessage = data;
-                },
+            onMessage: function onMessage(data) {
+                events.onMessage(data);
+                lastMessage = data;
+            },
 
-                onError: (data) => {
-                    events.onError(data);
-                    lastMessage = data;
-                },
+            onError: function onError(data) {
+                events.onError(data);
+                lastMessage = data;
+            },
 
-                onFatal: (data) => {
-                    events.onFatal(data);
-                    lastMessage = data;
-                },
+            onFatal: function onFatal(data) {
+                events.onFatal(data);
+                lastMessage = data;
+            },
 
-                onClose: (message) => {
-                    lastMessage = message;
-                }
-            }),
+            onClose: function onClose(message) {
+                lastMessage = message;
+            }
+        }),
             lastMessage = '',
             events = {
-                onMessage: () => {},
-                onError: () => {}
-            };
+            onMessage: function onMessage() {},
+            onError: function onError() {}
+        };
 
-        let slicingApi =  {
+        var slicingApi = {
 
             connection: ws,
-            upload: (name, file, ext) => {
-                let d = $.Deferred();
+            upload: function upload(name, file, ext) {
+                var d = $.Deferred();
 
-                let progress,
-                currentProgress;
+                var progress = void 0,
+                    currentProgress = void 0;
 
-                const CHUNK_PKG_SIZE = 4096;
-                const nth = 5;
+                var CHUNK_PKG_SIZE = 4096;
+                var nth = 5;
 
-                events.onMessage = (result) => {
+                events.onMessage = function (result) {
                     switch (result.status) {
 
-                    case 'ok':
-                        d.resolve(result);
-                        break;
+                        case 'ok':
+                            d.resolve(result);
+                            break;
 
-                    case 'continue':
-                        let fileReader,
-                            chunk,
-                            length = file.length || file.size;
+                        case 'continue':
+                            var fileReader = void 0,
+                                chunk = void 0,
+                                length = file.length || file.size;
 
-                        let step = 0,
-                            total = parseInt((file.length || file.size) / CHUNK_PKG_SIZE);
+                            var step = 0,
+                                total = parseInt((file.length || file.size) / CHUNK_PKG_SIZE);
 
-                        for (let i = 0; i < length; i += CHUNK_PKG_SIZE) {
-                            step++;
-                            currentProgress = parseInt((step - step % (total/nth)) / total * 100);
-                            if(currentProgress !== progress) {
-                                progress = currentProgress;
-                                d.notify(step++, total, progress);
+                            for (var i = 0; i < length; i += CHUNK_PKG_SIZE) {
+                                step++;
+                                currentProgress = parseInt((step - step % (total / nth)) / total * 100);
+                                if (currentProgress !== progress) {
+                                    progress = currentProgress;
+                                    d.notify(step++, total, progress);
+                                }
+
+                                chunk = file.slice(i, i + CHUNK_PKG_SIZE);
+
+                                if (file instanceof Array) {
+                                    chunk = convertToTypedArray(chunk, Uint8Array);
+                                }
+
+                                fileReader = new FileReader();
+
+                                fileReader.onloadend = function (e) {
+                                    ws.send(e.target.result);
+                                };
+
+                                fileReader.readAsArrayBuffer(chunk);
                             }
+                            break;
 
-                            chunk = file.slice(i, i + CHUNK_PKG_SIZE);
+                        case 'error':
+                            d.reject(result);
+                            break;
 
-                            if (file instanceof Array) {
-                                chunk = convertToTypedArray(chunk, Uint8Array);
-                            }
-
-                            fileReader = new FileReader();
-
-                            fileReader.onloadend = (e) => {
-                                ws.send(e.target.result);
-                            };
-
-                            fileReader.readAsArrayBuffer(chunk);
-                        }
-                        break;
-
-                    case 'error':
-                        d.reject(result);
-                        break;
-
-                    default:
-                        // TODO: do something?
-                        break;
+                        default:
+                            // TODO: do something?
+                            break;
                     }
-
                 };
 
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
                 ext = ext === 'obj' ? ' ' + ext : '';
                 ws.send('upload ' + name + ' ' + file.size + ext);
@@ -113,32 +115,36 @@ define([
                 return d.promise();
             },
 
-            upload_via_path: (name, file, ext, fileUrl) => {
+            upload_via_path: function upload_via_path(name, file, ext, fileUrl) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => {
+                events.onMessage = function (result) {
                     switch (result.status) {
 
-                    case 'ok':
-                        d.resolve(result);
-                        break;
+                        case 'ok':
+                            d.resolve(result);
+                            break;
 
-                    case 'continue':
-                        break;
+                        case 'continue':
+                            break;
 
-                    case 'error':
-                        d.reject(result);
-                        break;
+                        case 'error':
+                            d.reject(result);
+                            break;
 
-                    default:
-                        // TODO: do something?
-                        break;
+                        default:
+                            // TODO: do something?
+                            break;
                     }
                 };
 
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
                 fileUrl = encodeURI(fileUrl);
                 ext = ext === 'obj' ? ' ' + ext : '';
@@ -147,228 +153,295 @@ define([
                 return d.promise();
             },
 
-            set: (name, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ) => {
+            set: function set(name, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
-                let args = [name, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ];
+                var args = [name, positionX, positionY, positionZ, rotationX, rotationY, rotationZ, scaleX, scaleY, scaleZ];
                 ws.send('set ' + args.join(' '));
 
                 return d.promise();
             },
 
-            delete: (name) => {
+            delete: function _delete(name) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
                 ws.send('delete ' + name);
                 return d.promise();
             },
 
             // need revisit
-            goF: (nameArray) => {
+            goF: function goF(nameArray) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
                 ws.send('go ' + nameArray.join(' ') + ' -f');
                 return d.promise();
             },
 
-            beginSlicing: (nameArray, type) => {
+            beginSlicing: function beginSlicing(nameArray, type) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
                 type = type || 'f';
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
-                ws.send(`begin_slicing ${nameArray.join(' ')} -${type}`);
+                ws.send('begin_slicing ' + nameArray.join(' ') + ' -' + type);
                 return d.promise();
             },
 
-            reportSlicing: () => {
+            reportSlicing: function reportSlicing() {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                let progress = [];
+                var progress = [];
 
-                events.onMessage = (result) => {
-                    if(result.status === 'ok') {
-                        if(progress.length > 0) {
+                events.onMessage = function (result) {
+                    if (result.status === 'ok') {
+                        if (progress.length > 0) {
                             // only care about the last progress
-                            let lastProgress = progress.pop();
+                            var lastProgress = progress.pop();
                             progress.length = 0;
                             d.resolve(lastProgress);
-                        }
-                        else {
+                        } else {
                             d.resolve();
                         }
-                    }
-                    else {
+                    } else {
                         progress.push(result);
                     }
                 };
 
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
                 ws.send('report_slicing');
                 return d.promise();
             },
 
-            getSlicingResult: () => {
+            getSlicingResult: function getSlicingResult() {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => {
-                    if(result instanceof Blob) {
+                events.onMessage = function (result) {
+                    if (result instanceof Blob) {
                         d.resolve(result);
                     }
                 };
 
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
                 ws.send('get_result');
                 return d.promise();
             },
 
-            stopSlicing: () => {
+            stopSlicing: function stopSlicing() {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
                 ws.send('end_slicing');
                 return d.promise();
             },
 
-            setParameters: (keyValueObject) => {
-                let d = $.Deferred();
+            setParameters: function setParameters(keyValueObject) {
+                var d = $.Deferred();
 
-                let keyValue = Object.keys(keyValueObject).map(o => {
-                    return `${o} = ${keyValueObject[o]}`;
+                var keyValue = Object.keys(keyValueObject).map(function (o) {
+                    return o + ' = ' + keyValueObject[o];
                 });
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.resolve(error); };
-                events.onFatal = (error) => { d.resolve(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.resolve(error);
+                };
+                events.onFatal = function (error) {
+                    d.resolve(error);
+                };
 
-                ws.send(`advanced_setting ${keyValue.join('\n')}`);
+                ws.send('advanced_setting ' + keyValue.join('\n'));
 
                 return d.promise();
             },
 
-            setParameter: (name, value) => {
-                let d = $.Deferred();
+            setParameter: function setParameter(name, value) {
+                var d = $.Deferred();
 
-                let errors = [];
+                var errors = [];
 
-                events.onMessage = (result) => { d.resolve(result, errors); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result, errors);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
-                if(name === 'advancedSettings' && value !== '') {
-                    ws.send(`advanced_setting ${value}`);
-                }
-                else if(name === 'advancedSettingsCura2' && value !== '') {
-                    ws.send(`advanced_setting # slicer = cura2\n${value}`);
+                if (name === 'advancedSettings' && value !== '') {
+                    ws.send('advanced_setting ' + value);
+                } else if (name === 'advancedSettingsCura2' && value !== '') {
+                    ws.send('advanced_setting # slicer = cura2\n' + value);
                     //ws.send(`advanced_setting raft = 1`);
                     // console.error("Not yet implement Cura2");
-                }
-                else if(name !== 'advancedSettings') {
-                    ws.send(`advanced_setting ${name} = ${value}`);
+                } else if (name !== 'advancedSettings') {
+                    ws.send('advanced_setting ' + name + ' = ' + value);
                 }
 
                 return d.promise();
             },
 
-            getPath: () => {
+            getPath: function getPath() {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
                 ws.send('get_path');
                 return d.promise();
             },
 
-            uploadPreviewImage: (file) => {
+            uploadPreviewImage: function uploadPreviewImage(file) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => {
+                events.onMessage = function (result) {
                     switch (result.status) {
 
-                    case 'ok':
-                        d.resolve(result);
-                        break;
+                        case 'ok':
+                            d.resolve(result);
+                            break;
 
-                    case 'continue':
-                        ws.send(file);
-                        break;
+                        case 'continue':
+                            ws.send(file);
+                            break;
 
-                    default:
-                        // TODO: do something?
-                        break;
+                        default:
+                            // TODO: do something?
+                            break;
                     }
                 };
 
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
-                ws.send('upload_image ' + file.size);// + file.size);
+                ws.send('upload_image ' + file.size); // + file.size);
                 return d.promise();
             },
 
-            duplicate: (oldName, newName) => {
+            duplicate: function duplicate(oldName, newName) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
-                ws.send(`duplicate ${oldName} ${newName}`);
+                ws.send('duplicate ' + oldName + ' ' + newName);
                 return d.promise();
             },
 
-            changeEngine: (engine) => {
+            changeEngine: function changeEngine(engine) {
 
-                let d = $.Deferred();
+                var d = $.Deferred();
 
-                events.onMessage = (result) => { d.resolve(result); };
-                events.onError = (error) => { d.reject(error); };
-                events.onFatal = (error) => { d.reject(error); };
+                events.onMessage = function (result) {
+                    d.resolve(result);
+                };
+                events.onError = function (error) {
+                    d.reject(error);
+                };
+                events.onFatal = function (error) {
+                    d.reject(error);
+                };
 
-                ws.send(`change_engine ${engine} default`);
+                ws.send('change_engine ' + engine + ' default');
                 return d.promise();
             },
 
             // this is a helper  for unit test
-            trigger: (message, type) => {
+            trigger: function trigger(message, type) {
                 // console.log(message, type);
-                if(type) {
+                if (type) {
                     type === 'FATAL' ? events.onFatal(message) : events.onError(message);
-                }
-                else {
+                } else {
                     events.onMessage(message);
                 }
             }

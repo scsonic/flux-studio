@@ -1,4 +1,8 @@
-define(['localStorage'], function(localStorage) {
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+define(['localStorage'], function (localStorage) {
     'use strict';
 
     return {
@@ -9,22 +13,21 @@ define(['localStorage'], function(localStorage) {
          *
          * @return mixed
          */
-        get : function(name) {
+        get: function get(name) {
             name = name || '';
 
             var item = localStorage.getItem(name),
                 temp_item;
 
-            item = (null === item ? '' : item);
+            item = null === item ? '' : item;
 
             try {
                 temp_item = JSON.parse(item);
 
-                if ('object' === typeof temp_item) {
+                if ('object' === (typeof temp_item === 'undefined' ? 'undefined' : _typeof(temp_item))) {
                     item = temp_item;
                 }
-            }
-            catch (ex) {
+            } catch (ex) {
                 // TODO: do something
             }
 
@@ -39,9 +42,9 @@ define(['localStorage'], function(localStorage) {
          *
          * @return this
          */
-        set : function(name, val) {
+        set: function set(name, val) {
             name = name || '';
-            val = ('object' === typeof val ? JSON.stringify(val) : val);
+            val = 'object' === (typeof val === 'undefined' ? 'undefined' : _typeof(val)) ? JSON.stringify(val) : val;
 
             localStorage.setItem(name, val);
 
@@ -55,7 +58,7 @@ define(['localStorage'], function(localStorage) {
          *
          * @return this
          */
-        removeAt : function(name) {
+        removeAt: function removeAt(name) {
             localStorage.removeItem(name);
 
             return this;
@@ -66,7 +69,7 @@ define(['localStorage'], function(localStorage) {
          *
          * @return this
          */
-        clearAll : function() {
+        clearAll: function clearAll() {
             localStorage.clear();
 
             return this;
@@ -77,8 +80,8 @@ define(['localStorage'], function(localStorage) {
          *
          * @return this
          */
-        clearAllExceptIP : function() {
-            let ip = this.get('poke-ip-addr');
+        clearAllExceptIP: function clearAllExceptIP() {
+            var ip = this.get('poke-ip-addr');
             this.clearAll();
             this.set('poke-ip-addr', ip);
 
@@ -92,8 +95,8 @@ define(['localStorage'], function(localStorage) {
          *
          * @return bool
          */
-        isExisting : function(key) {
-            return ('string' === typeof localStorage.getItem(key) ? true : false);
+        isExisting: function isExisting(key) {
+            return 'string' === typeof localStorage.getItem(key) ? true : false;
         }
 
     };

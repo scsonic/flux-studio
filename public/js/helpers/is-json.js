@@ -1,15 +1,16 @@
+'use strict';
+
 /**
  * simply check the string is json format
  */
-define(function() {
+define(function () {
     'use strict';
 
-    return function(str) {
+    return function (str) {
         try {
             JSON.parse(str);
             return true;
-        }
-        catch(e) {
+        } catch (e) {
             return false;
         }
     };

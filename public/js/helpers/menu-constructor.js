@@ -1,10 +1,8 @@
-define([
-    'helpers/i18n',
-], function(
-    i18n
-) {
-    let lang = i18n.get(),
-        menu,
+'use strict';
+
+define(['helpers/i18n'], function (i18n) {
+    var lang = i18n.get(),
+        menu = void 0,
         file = {},
         edit = {},
         machines = {},
@@ -21,10 +19,10 @@ define([
     };
 
     menu = {
-        file
+        file: file
     };
 
-    return function() {
+    return function () {
         return menu;
     };
 });

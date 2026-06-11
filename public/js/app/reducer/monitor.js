@@ -1,16 +1,14 @@
-define([
-    'app/constants/action-creator-monitor'
-], (
-    C
-) => {
+'use strict';
 
-    let initialState = {
+define(['app/constants/action-creator-monitor'], function (C) {
+
+    var initialState = {
         mode: 'PREVIEW',
         currentPath: '',
         selectedItem: {},
         currentFolderContent: {},
         selectedFileInfo: [],
-        downloadProgress: { size: '', left: ''},
+        downloadProgress: { size: '', left: '' },
         isWaiting: false
     };
 
@@ -27,51 +25,72 @@ define([
 
     // TODO: update to object spread when available
 
-    return (state = initialState, action) => {
+    return function () {
+        var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : initialState;
+        var action = arguments[1];
+
 
         var _action = {};
 
-        _action[C.CHANGE_MODE] = () => Object.assign({}, state, {
-            mode: action.mode
-        });
+        _action[C.CHANGE_MODE] = function () {
+            return Object.assign({}, state, {
+                mode: action.mode
+            });
+        };
 
-        _action[C.UPDATE_FOLDER_CONTENT] = () => Object.assign({}, state, {
-            currentFolderContent: action.folderContent,
-            mode: action.mode
-        });
+        _action[C.UPDATE_FOLDER_CONTENT] = function () {
+            return Object.assign({}, state, {
+                currentFolderContent: action.folderContent,
+                mode: action.mode
+            });
+        };
 
-        _action[C.CHANGE_PATH] = () => Object.assign({}, state, {
-            mode: action.mode,
-            currentPath: action.path,
-            currentFolderContent: action.folderContent,
-            isWaiting: action.isWaiting
-        });
+        _action[C.CHANGE_PATH] = function () {
+            return Object.assign({}, state, {
+                mode: action.mode,
+                currentPath: action.path,
+                currentFolderContent: action.folderContent,
+                isWaiting: action.isWaiting
+            });
+        };
 
-        _action[C.PREVIEW_FILE] = () => Object.assign({}, state, {
-            mode: action.mode,
-            selectedFileInfo: action.selectedFileInfo,
-            isWaiting: action.isWaiting
-        });
+        _action[C.PREVIEW_FILE] = function () {
+            return Object.assign({}, state, {
+                mode: action.mode,
+                selectedFileInfo: action.selectedFileInfo,
+                isWaiting: action.isWaiting
+            });
+        };
 
-        _action[C.SELECT_ITEM] = () => Object.assign({}, state, {
-            selectedItem: action.selectedItem
-        });
+        _action[C.SELECT_ITEM] = function () {
+            return Object.assign({}, state, {
+                selectedItem: action.selectedItem
+            });
+        };
 
-        _action[C.SET_DOWNLOAD_PROGRESS] = () => Object.assign({}, state, {
-            downloadProgress: action.downloadProgress
-        });
+        _action[C.SET_DOWNLOAD_PROGRESS] = function () {
+            return Object.assign({}, state, {
+                downloadProgress: action.downloadProgress
+            });
+        };
 
-        _action[C.SET_UPLOAD_PROGRESS] = () => Object.assign({}, state, {
-            uploadProgress: action.uploadProgress
-        });
+        _action[C.SET_UPLOAD_PROGRESS] = function () {
+            return Object.assign({}, state, {
+                uploadProgress: action.uploadProgress
+            });
+        };
 
-        _action[C.SHOW_WAIT] = () => Object.assign({}, state, {
-            isWaiting: action.isWaiting
-        });
+        _action[C.SHOW_WAIT] = function () {
+            return Object.assign({}, state, {
+                isWaiting: action.isWaiting
+            });
+        };
 
-        _action[C.CLOSE_WAIT] = () => Object.assign({}, state, {
-            isWaiting: action.isWaiting
-        });
+        _action[C.CLOSE_WAIT] = function () {
+            return Object.assign({}, state, {
+                isWaiting: action.isWaiting
+            });
+        };
 
         if (typeof _action[action.type] !== 'function') {
             return state;

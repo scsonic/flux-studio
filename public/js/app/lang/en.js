@@ -1,4 +1,6 @@
-define(function() {
+'use strict';
+
+define(function () {
     'use strict';
 
     return {
@@ -428,7 +430,7 @@ define(function() {
                 unbind_device: 'Would you like to unbind this machine?',
                 CLOUD_SESSION_CONNECTION_ERROR: 'The machine is unable to access to the cloud server. Please reboot the machine.',
                 CLOUD_UNKNOWN_ERROR: 'The machine is unable to connected to the cloud server. Please reboot the machine.',
-                SERVER_INTERNAL_ERROR: 'Server internal error, please try again later.',
+                SERVER_INTERNAL_ERROR: 'Server internal error, please try again later.'
             }
         },
         print: {
@@ -461,11 +463,11 @@ define(function() {
                 solidLayerBottom: 'Solid Layer: Bottom',
                 density: 'Density',
                 pattern: 'Pattern',
-                auto: 'auto',                       // do not change
-                line: 'Line',                       // do not change
-                rectilinear: 'Rectilinear',         // do not change
-                rectilinearGrid: 'Rectilinear Grid',// do not change
-                honeycomb: 'Honeycomb',             // do not change
+                auto: 'auto', // do not change
+                line: 'Line', // do not change
+                rectilinear: 'Rectilinear', // do not change
+                rectilinearGrid: 'Rectilinear Grid', // do not change
+                honeycomb: 'Honeycomb', // do not change
                 offset: 'Offset',
                 xyOffset: 'Horizontal Expansion',
                 zOffset: 'Z Offset',
@@ -521,68 +523,55 @@ define(function() {
                 firstLayerTemperature: 'First Layer',
                 flexibleMaterial: 'Flexible Material'
             },
-            mode: [
-                {
-                    value: 'beginner',
-                    label: 'Beginner',
-                    checked: true
-                },
-                {
-                    value: 'expert',
-                    label: 'Expert'
-                }
-            ],
+            mode: [{
+                value: 'beginner',
+                label: 'Beginner',
+                checked: true
+            }, {
+                value: 'expert',
+                label: 'Expert'
+            }],
             params: {
                 beginner: {
                     print_speed: {
                         text: 'Print Speed',
-                        options: [
-                            {
-                                value: 'slow',
-                                label: 'Slow',
-                                selected: true
-                            },
-                            {
-                                value: 'fast',
-                                label: 'Fast'
-                            }
-                        ]
+                        options: [{
+                            value: 'slow',
+                            label: 'Slow',
+                            selected: true
+                        }, {
+                            value: 'fast',
+                            label: 'Fast'
+                        }]
                     },
                     material: {
                         text: 'Material',
-                        options: [
-                            {
-                                value: 'pla',
-                                label: 'PLA',
-                                selected: true
-                            }
-                        ]
+                        options: [{
+                            value: 'pla',
+                            label: 'PLA',
+                            selected: true
+                        }]
                     },
                     support: {
                         text: 'Support',
                         on: 'On',
                         off: 'Off',
-                        options: [
-                            {
-                                value: 'Touching',
-                                label: 'Touching',
-                                checked: true
-                            },
-                            {
-                                value: 'nowhere',
-                                label: 'nowhere'
-                            }
-                        ]
+                        options: [{
+                            value: 'Touching',
+                            label: 'Touching',
+                            checked: true
+                        }, {
+                            value: 'nowhere',
+                            label: 'nowhere'
+                        }]
                     },
                     platform: {
                         text: 'Platform',
-                        options: [
-                            {
-                                value: 'raft',
-                                label: 'Raft',
-                                checked: true
-                            }
-                        ]
+                        options: [{
+                            value: 'raft',
+                            label: 'Raft',
+                            checked: true
+                        }]
                     }
                 },
                 expert: {
@@ -603,27 +592,22 @@ define(function() {
                     },
                     support: {
                         text: 'Support',
-                        options: [
-                            {
-                                value: 'everywhere',
-                                label: 'Everywhere',
-                                checked: true
-                            },
-                            {
-                                value: 'nowhere',
-                                label: 'nowhere'
-                            }
-                        ]
+                        options: [{
+                            value: 'everywhere',
+                            label: 'Everywhere',
+                            checked: true
+                        }, {
+                            value: 'nowhere',
+                            label: 'nowhere'
+                        }]
                     },
                     platform: {
                         text: 'Platform',
-                        options: [
-                            {
-                                value: 'raft',
-                                label: 'Raft',
-                                checked: true
-                            }
-                        ]
+                        options: [{
+                            value: 'raft',
+                            label: 'Raft',
+                            checked: true
+                        }]
                     }
                 }
             },
@@ -808,53 +792,46 @@ define(function() {
                     object_options: {
                         text: 'MATERIAL',
                         label: 'Object Options',
-                        options: [
-                            {
-                                value: 'cardboard',
-                                label: 'Kraftpaper',
-                                data: {
-                                    laser_speed: 10,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'wood',
-                                label: 'WOOD',
-                                data: {
-                                    laser_speed: 3,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'leather',
-                                label: 'LEATHER',
-                                data: {
-                                    laser_speed: 5,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'paper',
-                                label: 'PAPER',
-                                data: {
-                                    laser_speed: 2,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'cork',
-                                label: 'CORK',
-                                data: {
-                                    laser_speed: 5,
-                                    power: 255
-                                }
-                            },
-                            {
-                                value: 'other',
-                                label: 'OTHER',
-                                data: {}
+                        options: [{
+                            value: 'cardboard',
+                            label: 'Kraftpaper',
+                            data: {
+                                laser_speed: 10,
+                                power: 255
                             }
-                        ]
+                        }, {
+                            value: 'wood',
+                            label: 'WOOD',
+                            data: {
+                                laser_speed: 3,
+                                power: 255
+                            }
+                        }, {
+                            value: 'leather',
+                            label: 'LEATHER',
+                            data: {
+                                laser_speed: 5,
+                                power: 255
+                            }
+                        }, {
+                            value: 'paper',
+                            label: 'PAPER',
+                            data: {
+                                laser_speed: 2,
+                                power: 255
+                            }
+                        }, {
+                            value: 'cork',
+                            label: 'CORK',
+                            data: {
+                                laser_speed: 5,
+                                power: 255
+                            }
+                        }, {
+                            value: 'other',
+                            label: 'OTHER',
+                            data: {}
+                        }]
                     },
                     laser_speed: {
                         text: 'Laser Speed',
@@ -920,42 +897,35 @@ define(function() {
                 text: 'Best',
                 time: '~30min',
                 value: 1200
-            },
-            {
+            }, {
                 id: 'high',
                 text: 'High',
                 time: '~20min',
                 value: 800
-            },
-            {
+            }, {
                 id: 'normal',
                 text: 'Normal',
                 time: '~10min',
                 value: 400
-            },
-            {
+            }, {
                 id: 'low',
                 text: 'Low',
                 time: '~5min',
                 value: 200
-            },
-            {
+            }, {
                 id: 'draft',
                 text: 'Draft',
                 time: '~2min',
                 value: 100
             }],
-            save_mode: [
-                {
-                    value: 'stl',
-                    label: 'STL',
-                    checked: true
-                },
-                {
-                    value: 'pcd',
-                    label: 'PCD'
-                },
-            ],
+            save_mode: [{
+                value: 'stl',
+                label: 'STL',
+                checked: true
+            }, {
+                value: 'pcd',
+                label: 'PCD'
+            }],
             manipulation: {
                 filter: 'FILTER',
                 position: 'POSITION',
@@ -1017,7 +987,7 @@ define(function() {
                 layer_by_color: 'Color',
                 nolayer: 'Single Layer',
                 no_support_text: 'FLUX Studio does not support text tag currently. Please transfer text to path before importing.',
-                power_too_high_damage_laser_tube: 'Using lower laser power will extends laser tube\'s lifetime.' ,
+                power_too_high_damage_laser_tube: 'Using lower laser power will extends laser tube\'s lifetime.',
                 speed_too_high_lower_the_quality: 'Using too high speed at this resolution may result in the lower quality of shading engraving.',
                 both_power_and_speed_too_high: 'Using lower laser power will extends laser tube\'s lifetime.\nAlso, too high speed at this resolution may result in the lower quality of shading engraving.',
                 should_update_firmware_to_continue: 'Your firmware does not support some improvements of FLUX Studio. For better performance and user experience, please update firmware to continue. (Menu > Machine > [Your Machine] > Update Firmware)'
@@ -1112,7 +1082,7 @@ define(function() {
                         max: 100,
                         step: 0.1
                     }
-                },
+                }
             },
             bottom_right_panel: {
                 convert_text_to_path_before_export: 'Convert Text to Path...'
@@ -1264,87 +1234,87 @@ define(function() {
             beambox_should_use_touch_panel_to_adjust: 'Beambox settings should be adjusted from Beambox touch panel.'
         },
         monitor: {
-            change_filament                     : 'CHANGE FILAMENT',
-            browse_file                         : 'BROWSE FILE',
-            monitor                             : 'MONITOR',
-            currentTemperature                  : 'Current Temp',
-            nothingToPrint                      : 'There is nothing to print',
-            go                                  : 'Start',
-            start                               : 'Start',
-            pause                               : 'Pause',
-            stop                                : 'Stop',
-            record                              : 'Record',
-            camera                              : 'Camera',
-            connecting                          : 'Connecting, please wait...',
-            HEAD_OFFLINE                        : '#110 Toolhead not detected\nMake sure the toolhead cable is attached correctly <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218183157">More Info</a>',
-            HEAD_ERROR_CALIBRATING              : '#112 Unable to calibrate toolhead\'s internal gyro\nPlease re-attach the toolhead',
-            HEAD_ERROR_FAN_FAILURE              : '#113 Cooling fan failed\nKindly spin the fan with a pencil or thin stick. <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/217732178">More Info</a>',
-            HEAD_ERROR_HEAD_OFFLINE             : '#110 Toolhead not detected\nMake sure the toolhead cable is attached correctly <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218183157">More Info</a>',
-            HEAD_ERROR_TYPE_ERROR               : '#111 Toolhead incorrect \nPlease attach the correct toolhead',
-            HEAD_ERROR_INTLK_TRIG               : '#116 Engraving toolhead tilt detected \nPlease ensure the rods are connected correctly. <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/217085937">More Info</a>',
-            HEAD_ERROR_RESET                    : '#114 Toolhead bad connection\nMake sure the toolhead is connected correctly, kindly contact support if this error pops out twice in one print <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218183167">More Info</a>',
-            HEAD_ERROR_TILT                     : '#162 Toolhead tilt detected\nPlease check ball joint rod is attached correctly',
-            HEAD_ERROR_SHAKE                    : '#162 Toolhead tilt detected\nPlease check ball joint rod is attached correctly',
-            HEAD_ERROR_HARDWARE_FAILURE         : '#164 Toolhead abnormal temperature detected\nPlease contact FLUX Support <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218415378">More Info</a>',
-            'HEAD_ERROR_?'                      : '#199 Toolhead error \nCheck if the toolhead is abnormal',
-            HARDWARE_ERROR_FILAMENT_RUNOUT      : '#121 Filament not detected \nPlease insert new material <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931757">More Info</a>',
-            HARDWARE_ERROR_0                    : '#121 Filament not detected \nPlease insert new material <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931757">More Info</a>',
-            HARDWARE_ERROR_PLATE_MISSING        : '#122 Unable to detect the base plate\nPlease put on the plate.',
-            HARDWARE_ERROR_ZPROBE_ERROR         : '#123 Unable to calibrate the base plate\nPlease remove potential obstacles (left-over on the nozzle or the plate ) <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931767">More Info</a>',
-            HARDWARE_ERROR_CONVERGENCE_FAILED   : '#123 Unable to calibrate the base plate\nPlease remove potential obstacles (left-over on the nozzle or the plate ) <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931767">More Info</a>',
-            HARDWARE_ERROR_HOME_FAILED          : '#124 Unable to calibrate origin (home)\nPlease remove obstacles on rails, and make sure toolhead cables are not caught by carriages.',
-            HARDWARE_ERROR_MAINBOARD_ERROR      : '#401 Critical Error: Mainboard offline. Please contact FLUX Support.',
-            HARDWARE_ERROR_SUBSYSTEM_ERROR      : '#402 Critical Error: Subsystem no response. Please contact FLUX Support.',
-            HARDWARE_ERROR_SENSOR_ERROR         : 'Hardware sensor error, please contact FLUX Support.~',
-            HARDWARE_ERROR_SENSOR_ERROR_FSR     : 'Pressure sensor failed',
-            HARDWARE_ERROR_PUMP_ERROR           : '#900 Please check with your water tank.',
-            HARDWARE_ERROR_DOOR_OPENED          : '#901 Close the door to continue.',
-            HARDWARE_ERROR_OVER_TEMPERATURE     : '#902 Overheated. Please wait for a few minutes.',
-            USER_OPERATION_ROTARY_PAUSE         : 'Please switch to the rotary motor',
-            WRONG_HEAD                          : 'Toolhead is unknown, please connect to a correct toolhead',
-            USER_OPERATION                      : 'Machine is being operated by (other) user',
-            RESOURCE_BUSY                       : 'The machine is busy\nIf it is not running, please restart the machine',
-            DEVICE_ERROR                        : 'Something went wrong\nPlease restart the machine',
-            NO_RESPONSE                         : 'Something went wrong\nPlease restart the machine',
-            SUBSYSTEM_ERROR                     : '#402 Critical Error: Subsystem no response. Please contact FLUX Support.',
-            HARDWARE_FAILURE                    : 'Something went wrong\nPlease restart the machine',
-            MAINBOARD_OFFLINE                   : 'Something went wrong\nPlease restart the machine',
-            G28_FAILED                          : '#124 Unable to calibrate origin (home)\nPlease remove obstacles on rails, and make sure toolhead cables are not caught by carriages.',
-            FILAMENT_RUNOUT_0                   : '#121 Ran out of filament\nPlease insert new material <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931757">More Info</a>',
-            USER_OPERATION_FROM_CODE            : 'Paused for operation (filament change)',
-            processing                          : 'Processing',
-            savingPreview                       : 'Generating thumbnails',
-            hour                                : 'h',
-            minute                              : 'm',
-            second                              : 's',
-            left                                : 'left',
-            temperature                         : 'Temperature',
-            forceStop                           : 'Do you wish to abort current task?',
-            upload                              : 'Upload',
-            download                            : 'Download',
-            fileNotDownloadable                 : 'This file type is not supported for download',
-            cannotPreview                       : 'Can not preview this file format',
-            extensionNotSupported               : 'This file format is not supported',
-            fileExistContinue                   : 'File already exists, do you want to replace it?',
-            confirmGToF                         : 'The GCode will be converted to FCode, do you want to continue? ( will replace if exists )',
-            updatePrintPresetSetting            : 'FLUX Studio has new default printing parameters, do you want to update?\n( Current settings will be overwritten )',
-            confirmFileDelete                   : 'Are you sure you want to delete this file?',
+            change_filament: 'CHANGE FILAMENT',
+            browse_file: 'BROWSE FILE',
+            monitor: 'MONITOR',
+            currentTemperature: 'Current Temp',
+            nothingToPrint: 'There is nothing to print',
+            go: 'Start',
+            start: 'Start',
+            pause: 'Pause',
+            stop: 'Stop',
+            record: 'Record',
+            camera: 'Camera',
+            connecting: 'Connecting, please wait...',
+            HEAD_OFFLINE: '#110 Toolhead not detected\nMake sure the toolhead cable is attached correctly <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218183157">More Info</a>',
+            HEAD_ERROR_CALIBRATING: '#112 Unable to calibrate toolhead\'s internal gyro\nPlease re-attach the toolhead',
+            HEAD_ERROR_FAN_FAILURE: '#113 Cooling fan failed\nKindly spin the fan with a pencil or thin stick. <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/217732178">More Info</a>',
+            HEAD_ERROR_HEAD_OFFLINE: '#110 Toolhead not detected\nMake sure the toolhead cable is attached correctly <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218183157">More Info</a>',
+            HEAD_ERROR_TYPE_ERROR: '#111 Toolhead incorrect \nPlease attach the correct toolhead',
+            HEAD_ERROR_INTLK_TRIG: '#116 Engraving toolhead tilt detected \nPlease ensure the rods are connected correctly. <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/217085937">More Info</a>',
+            HEAD_ERROR_RESET: '#114 Toolhead bad connection\nMake sure the toolhead is connected correctly, kindly contact support if this error pops out twice in one print <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218183167">More Info</a>',
+            HEAD_ERROR_TILT: '#162 Toolhead tilt detected\nPlease check ball joint rod is attached correctly',
+            HEAD_ERROR_SHAKE: '#162 Toolhead tilt detected\nPlease check ball joint rod is attached correctly',
+            HEAD_ERROR_HARDWARE_FAILURE: '#164 Toolhead abnormal temperature detected\nPlease contact FLUX Support <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218415378">More Info</a>',
+            'HEAD_ERROR_?': '#199 Toolhead error \nCheck if the toolhead is abnormal',
+            HARDWARE_ERROR_FILAMENT_RUNOUT: '#121 Filament not detected \nPlease insert new material <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931757">More Info</a>',
+            HARDWARE_ERROR_0: '#121 Filament not detected \nPlease insert new material <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931757">More Info</a>',
+            HARDWARE_ERROR_PLATE_MISSING: '#122 Unable to detect the base plate\nPlease put on the plate.',
+            HARDWARE_ERROR_ZPROBE_ERROR: '#123 Unable to calibrate the base plate\nPlease remove potential obstacles (left-over on the nozzle or the plate ) <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931767">More Info</a>',
+            HARDWARE_ERROR_CONVERGENCE_FAILED: '#123 Unable to calibrate the base plate\nPlease remove potential obstacles (left-over on the nozzle or the plate ) <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931767">More Info</a>',
+            HARDWARE_ERROR_HOME_FAILED: '#124 Unable to calibrate origin (home)\nPlease remove obstacles on rails, and make sure toolhead cables are not caught by carriages.',
+            HARDWARE_ERROR_MAINBOARD_ERROR: '#401 Critical Error: Mainboard offline. Please contact FLUX Support.',
+            HARDWARE_ERROR_SUBSYSTEM_ERROR: '#402 Critical Error: Subsystem no response. Please contact FLUX Support.',
+            HARDWARE_ERROR_SENSOR_ERROR: 'Hardware sensor error, please contact FLUX Support.~',
+            HARDWARE_ERROR_SENSOR_ERROR_FSR: 'Pressure sensor failed',
+            HARDWARE_ERROR_PUMP_ERROR: '#900 Please check with your water tank.',
+            HARDWARE_ERROR_DOOR_OPENED: '#901 Close the door to continue.',
+            HARDWARE_ERROR_OVER_TEMPERATURE: '#902 Overheated. Please wait for a few minutes.',
+            USER_OPERATION_ROTARY_PAUSE: 'Please switch to the rotary motor',
+            WRONG_HEAD: 'Toolhead is unknown, please connect to a correct toolhead',
+            USER_OPERATION: 'Machine is being operated by (other) user',
+            RESOURCE_BUSY: 'The machine is busy\nIf it is not running, please restart the machine',
+            DEVICE_ERROR: 'Something went wrong\nPlease restart the machine',
+            NO_RESPONSE: 'Something went wrong\nPlease restart the machine',
+            SUBSYSTEM_ERROR: '#402 Critical Error: Subsystem no response. Please contact FLUX Support.',
+            HARDWARE_FAILURE: 'Something went wrong\nPlease restart the machine',
+            MAINBOARD_OFFLINE: 'Something went wrong\nPlease restart the machine',
+            G28_FAILED: '#124 Unable to calibrate origin (home)\nPlease remove obstacles on rails, and make sure toolhead cables are not caught by carriages.',
+            FILAMENT_RUNOUT_0: '#121 Ran out of filament\nPlease insert new material <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/218931757">More Info</a>',
+            USER_OPERATION_FROM_CODE: 'Paused for operation (filament change)',
+            processing: 'Processing',
+            savingPreview: 'Generating thumbnails',
+            hour: 'h',
+            minute: 'm',
+            second: 's',
+            left: 'left',
+            temperature: 'Temperature',
+            forceStop: 'Do you wish to abort current task?',
+            upload: 'Upload',
+            download: 'Download',
+            fileNotDownloadable: 'This file type is not supported for download',
+            cannotPreview: 'Can not preview this file format',
+            extensionNotSupported: 'This file format is not supported',
+            fileExistContinue: 'File already exists, do you want to replace it?',
+            confirmGToF: 'The GCode will be converted to FCode, do you want to continue? ( will replace if exists )',
+            updatePrintPresetSetting: 'FLUX Studio has new default printing parameters, do you want to update?\n( Current settings will be overwritten )',
+            confirmFileDelete: 'Are you sure you want to delete this file?',
             task: {
-                EXTRUDER                        : 'Printing',
-                PRINT                           : 'Printing',
-                LASER                           : 'Laser Engraving',
-                DRAW                            : 'Digital Drawing',
-                CUT                             : 'Vinyl Cutting',
-                VINYL                           : 'Vinyl Cutting',
-                BEAMBOX                         : 'Laser Engraving',
-                'N/A'                           : 'Free Mode'
+                EXTRUDER: 'Printing',
+                PRINT: 'Printing',
+                LASER: 'Laser Engraving',
+                DRAW: 'Digital Drawing',
+                CUT: 'Vinyl Cutting',
+                VINYL: 'Vinyl Cutting',
+                BEAMBOX: 'Laser Engraving',
+                'N/A': 'Free Mode'
             },
             device: {
-                EXTRUDER                        : 'Printing Toolhead',
-                LASER                           : 'Engraving Toolhead',
-                DRAW                            : 'Drawing Toolhead'
+                EXTRUDER: 'Printing Toolhead',
+                LASER: 'Engraving Toolhead',
+                DRAW: 'Drawing Toolhead'
             },
-            cant_get_toolhead_version           : 'Unable to get toolhead information'
+            cant_get_toolhead_version: 'Unable to get toolhead information'
         },
         alert: {
             caption: 'Error',
@@ -1410,7 +1380,7 @@ define(function() {
             unknown_device: 'Cannot connect to the machine, please make sure USB is attached to the machine',
             important_update: {
                 caption: 'Important Update',
-                message: 'Important Machine firmware update is available. Do you wish to update now?',
+                message: 'Important Machine firmware update is available. Do you wish to update now?'
             },
             unsupport_osx_version: 'Unsupported Mac OS X Version Detected',
             need_password: 'Need Password to Connect to the Machine',
@@ -1542,7 +1512,7 @@ define(function() {
             startPrintDeltaPlus: 'Make sure you put on the magnetic print plate.',
             runningMovementTests: 'Running movement tests',
             connectingMachine: 'Connecting to the machine',
-            movementTestFailed: { caption: 'Unable to pass movement tests',  message: '1. Make sure the toolhead cable is stretched correctly.<br/>2. Make sure the connector of toolhead cable to the machine has inserted about half into the machine.<br/>3. Try to turn the connector on the printing toolhead 180 degrees.<br/>4. Check <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/115003674128">this article</a>.<br/> Try again?' },
+            movementTestFailed: { caption: 'Unable to pass movement tests', message: '1. Make sure the toolhead cable is stretched correctly.<br/>2. Make sure the connector of toolhead cable to the machine has inserted about half into the machine.<br/>3. Try to turn the connector on the printing toolhead 180 degrees.<br/>4. Check <a target="_blank" href="https://flux3dp.zendesk.com/hc/en-us/articles/115003674128">this article</a>.<br/> Try again?' },
             befaultTutorialWelcome: 'Thank you for ordering FLUX Delta+!<br/><br/> This guide will help you take you through the basic settings of the machine and help you set up.<br/><br/> Let’s watch the tutorial! Please turn on the subtitles.<br/><br/>',
             openBrowser: 'openBrowser',
             welcome: 'WELCOME'
@@ -1570,16 +1540,16 @@ define(function() {
             extruderOnly: 'Please use the printing toolhead for calibration'
         },
         head_info: {
-            ID                  : 'ID',
-            VERSION             : 'Firmware Version',
-            HEAD_MODULE         : 'Toolhead Type',
-            EXTRUDER            : 'Printing Toolhead',
-            LASER               : 'Engraving Toolhead',
-            USED                : 'Used',
-            HARDWARE_VERSION    : 'Hardware Version',
-            FOCAL_LENGTH        : 'Focal Length',
-            hours               : 'Hours',
-            cannot_get_info     : 'Toolhead type is unreadable'
+            ID: 'ID',
+            VERSION: 'Firmware Version',
+            HEAD_MODULE: 'Toolhead Type',
+            EXTRUDER: 'Printing Toolhead',
+            LASER: 'Engraving Toolhead',
+            USED: 'Used',
+            HARDWARE_VERSION: 'Hardware Version',
+            FOCAL_LENGTH: 'Focal Length',
+            hours: 'Hours',
+            cannot_get_info: 'Toolhead type is unreadable'
         }
     };
 });

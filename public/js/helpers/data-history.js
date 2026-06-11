@@ -1,67 +1,68 @@
+'use strict';
+
 /**
  * Data history handler
  */
-define(['helpers/array-findindex'], function() {
+define(['helpers/array-findindex'], function () {
     'use strict';
 
-    var History = function(undefined) {
+    var History = function History(undefined) {
         var history = [];
 
         return {
-            push: function(name, data) {
+            push: function push(name, data) {
                 history.push({
                     name: name,
                     data: data
                 });
             },
-            pop: function() {
+            pop: function pop() {
                 return history.pop();
             },
-            update: function(name, data) {
-                var filtered = history.filter(function(arr) {
+            update: function update(name, data) {
+                var filtered = history.filter(function (arr) {
                     return name === arr.name;
                 });
 
-                filtered.forEach(function(el) {
+                filtered.forEach(function (el) {
                     el.data = data;
                 });
 
                 return filtered.length;
             },
-            findByName: function(name) {
-                return history.filter(function(arr) {
+            findByName: function findByName(name) {
+                return history.filter(function (arr) {
                     return name === arr.name;
                 });
             },
-            get: function() {
+            get: function get() {
                 return history;
             },
-            clearAll: function() {
+            clearAll: function clearAll() {
                 history = [];
             },
-            deleteAt: function(name) {
-                var index = history.findIndex(function(obj) {
+            deleteAt: function deleteAt(name) {
+                var index = history.findIndex(function (obj) {
                     return obj.name === name;
                 });
 
                 if (-1 !== index) {
                     history.splice(index, 1);
                     return true;
-                }
-                else {
+                } else {
                     return false;
                 }
             },
-            getLatest: function() {
-                return (0 < history.length ? history.slice(-1)[0] : undefined);
+            getLatest: function getLatest() {
+                return 0 < history.length ? history.slice(-1)[0] : undefined;
             },
-            isEmpty: function() {
+            isEmpty: function isEmpty() {
                 return 0 === history.length;
             }
         };
     };
 
-    return function() {
+    return function () {
         return new History(undefined);
     };
 });

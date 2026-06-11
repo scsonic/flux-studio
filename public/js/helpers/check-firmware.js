@@ -1,11 +1,7 @@
-define([
-    'jquery',
-    'helpers/version-compare'
-], function(
-    $,
-    versionCompare
-) {
-    const infoMap = {
+'use strict';
+
+define(['jquery', 'helpers/version-compare'], function ($, versionCompare) {
+    var infoMap = {
         delta: {
             firmware: {
                 api_key: 'fluxmonitor',
@@ -21,7 +17,7 @@ define([
                 api_key: 'beambox-firmware',
                 //TODO:
                 downloadUrl: 'https://s3-us-west-1.amazonaws.com/fluxstudio/firmware/beambox/beamboxfirmware-[version].fxfw'
-            },
+            }
         }
 
     };
@@ -51,8 +47,8 @@ define([
      * @return Promise
      */
 
-    return function(printer, type) {
-        const deferred = $.Deferred();
+    return function (printer, type) {
+        var deferred = $.Deferred();
         // return deferred.reject if network is unavailable.
         if (!navigator.onLine) {
             deferred.reject({
@@ -61,9 +57,9 @@ define([
             return deferred.promise();
         }
 
-        const series = checkMachineSeries(printer.model);
-        const info = infoMap[series][type];
-        const request_data = {
+        var series = checkMachineSeries(printer.model);
+        var info = infoMap[series][type];
+        var request_data = {
             feature: 'check_update',
             key: info['api_key']
         };
@@ -71,22 +67,20 @@ define([
         $.ajax({
             url: 'https://flux3dp.com/api_entry/',
             data: request_data
-        })
-            .done(function(response) {
-                response.needUpdate =  versionCompare(printer.version, response.latest_version );
-                console.log('response.needUpdate: ', response.needUpdate);
-                response.latestVersion = response.latest_version;
-                response.changelog_en = response.changelog_en.replace(/[\r]/g, '<br/>');
-                response.changelog_zh = response.changelog_zh.replace(/[\r]/g, '<br/>');
-                response.downloadUrl = info['downloadUrl'].replace('[version]', response.latest_version);
+        }).done(function (response) {
+            response.needUpdate = versionCompare(printer.version, response.latest_version);
+            console.log('response.needUpdate: ', response.needUpdate);
+            response.latestVersion = response.latest_version;
+            response.changelog_en = response.changelog_en.replace(/[\r]/g, '<br/>');
+            response.changelog_zh = response.changelog_zh.replace(/[\r]/g, '<br/>');
+            response.downloadUrl = info['downloadUrl'].replace('[version]', response.latest_version);
 
-                deferred.resolve(response);
-            })
-            .fail(function() {
-                deferred.reject({
-                    needUpdate: true
-                });
+            deferred.resolve(response);
+        }).fail(function () {
+            deferred.reject({
+                needUpdate: true
             });
+        });
 
         return deferred.promise();
     };

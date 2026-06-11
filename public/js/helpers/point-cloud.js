@@ -1,25 +1,29 @@
+'use strict';
+
 /**
  * Point cloud helper
  */
-define(function() {
+define(function () {
     'use strict';
 
     // use "NEW" operator to create object
-    return function() {
+
+    return function () {
         var blobs = [],
             chunk = {
-                left: [],
-                right: []
-            };
+            left: [],
+            right: []
+        };
 
         return {
-            push: function(data, left_len, right_len, opts) {
+            push: function push(data, left_len, right_len, opts) {
                 opts = opts || {};
-                opts.onProgress = opts.onProgress || function() {};
+                opts.onProgress = opts.onProgress || function () {};
 
                 var fileReader = new FileReader(),
                     blobs_len = 0,
-                    typedArray, blob;
+                    typedArray,
+                    blob;
 
                 if (true === data instanceof Blob) {
                     blobs.push(data);
@@ -28,21 +32,20 @@ define(function() {
                     chunk.right.push(data.slice(0, left_len));
                     chunk.left.push(data.slice(left_len, left_len + right_len));
 
-                    fileReader.onload = function() {
+                    fileReader.onload = function () {
                         typedArray = new Float32Array(this.result);
                         opts.onProgress(typedArray, blobs_len);
                     };
 
                     blob = new Blob(blobs);
                     fileReader.readAsArrayBuffer(blob);
-                }
-                else {
+                } else {
                     // TODO: throw exception?
                 }
 
                 return this;
             },
-            get: function() {
+            get: function get() {
                 return {
                     left: new Blob(chunk.left),
                     right: new Blob(chunk.right),

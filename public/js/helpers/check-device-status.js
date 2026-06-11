@@ -1,34 +1,20 @@
+'use strict';
+
 /**
  * check device status and action
  */
-define([
-    'jquery',
-    'helpers/i18n',
-    'helpers/device-master',
-    'app/constants/device-constants',
-    'app/actions/alert-actions',
-    'app/stores/alert-store',
-    'app/actions/progress-actions',
-    'app/constants/progress-constants'
-], function(
-    $,
-    i18n,
-    DeviceMaster,
-    DeviceConstants,
-    AlertActions,
-    AlertStore,
-    ProgressActions,
-    ProgressConstants
-) {
+define(['jquery', 'helpers/i18n', 'helpers/device-master', 'app/constants/device-constants', 'app/actions/alert-actions', 'app/stores/alert-store', 'app/actions/progress-actions', 'app/constants/progress-constants'], function ($, i18n, DeviceMaster, DeviceConstants, AlertActions, AlertStore, ProgressActions, ProgressConstants) {
 
-    const lang = i18n.get();
+    var lang = i18n.get();
 
-    return function(printer, allowPause, forceAbort) {
-        if(!printer) { return; }
-        const deferred = $.Deferred();
+    return function (printer, allowPause, forceAbort) {
+        if (!printer) {
+            return;
+        }
+        var deferred = $.Deferred();
 
-        const onYes = async (id) => {
-            let timer;
+        var onYes = async function onYes(id) {
+            var timer = void 0;
             await DeviceMaster.selectDevice(printer);
             switch (id) {
                 case 'kick':
@@ -38,10 +24,10 @@ define([
                 case 'abort':
                     ProgressActions.open(ProgressConstants.NONSTOP);
                     await DeviceMaster.stop();
-                    timer = setInterval(async () => {
-                        const report = await DeviceMaster.getReport();
+                    timer = setInterval(async function () {
+                        var report = await DeviceMaster.getReport();
                         if (report.st_id === DeviceConstants.status.ABORTED) {
-                            setTimeout(function() {
+                            setTimeout(function () {
                                 DeviceMaster.quit();
                             }, 500);
                         } else if (report.st_id === DeviceConstants.status.IDLE) {
@@ -56,7 +42,7 @@ define([
             AlertStore.removeYesListener(onYes);
         };
 
-        deferred.always(function() {
+        deferred.always(function () {
             AlertStore.removeYesListener(onYes);
         });
 
@@ -80,13 +66,11 @@ define([
             case DeviceConstants.status.COMPLETED:
             case DeviceConstants.status.ABORTED:
                 // quit
-                DeviceMaster.selectDevice(printer)
-                    .then(() => {
-                        DeviceMaster.quit()
-                            .then(() => {
-                                deferred.resolve('ok');
-                            });
+                DeviceMaster.selectDevice(printer).then(function () {
+                    DeviceMaster.quit().then(function () {
+                        deferred.resolve('ok');
                     });
+                });
                 break;
             case DeviceConstants.status.RUNNING:
             case DeviceConstants.status.PAUSED:
@@ -94,10 +78,9 @@ define([
             case DeviceConstants.status.PAUSED_FROM_RUNNING:
             case DeviceConstants.status.PAUSING_FROM_STARTING:
             case DeviceConstants.status.PAUSING_FROM_RUNNING:
-                if(allowPause) {
+                if (allowPause) {
                     deferred.resolve('ok', printer.st_id);
-                }
-                else {
+                } else {
                     // ask for abort
                     ProgressActions.close();
                     if (forceAbort) {

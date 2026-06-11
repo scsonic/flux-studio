@@ -1,64 +1,20 @@
-define([
-    'jquery',
-    'helpers/i18n',
-    'helpers/sprintf',
-    'app/actions/alert-actions',
-    'app/actions/beambox',
-    'app/actions/progress-actions',
-    'app/constants/progress-constants',
-    'app/actions/input-lightbox-actions',
-    'app/constants/device-constants',
-    'helpers/api/control',
-    'helpers/api/3d-scan-control',
-    'helpers/usb-checker',
-    'helpers/api/touch',
-    'helpers/api/discover',
-    'helpers/api/config',
-    'app/actions/global-actions',
-    'app/constants/input-lightbox-constants',
-    'helpers/device-list',
-    'helpers/api/camera',
-    'helpers/api/simple-websocket',
-    'helpers/socket-master',
-    'helpers/device-error-handler',
-    'helpers/array-findindex'
-], function (
-    $,
-    i18n,
-    sprintf,
-    AlertActions,
-    BeamboxActions,
-    ProgressActions,
-    ProgressConstants,
-    InputLightboxActions,
-    DeviceConstants,
-    DeviceController,
-    ScanController,
-    UsbChecker,
-    Touch,
-    Discover,
-    Config,
-    GlobalActions,
-    InputLightBoxConstants,
-    DeviceList,
-    Camera,
-    SimpleWebsocket,
-    Sm,
-    DeviceErrorHandler
-) {
+'use strict';
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-    let lang = i18n.get(),
-        SocketMaster,
-        defaultPrinter,
+define(['jquery', 'helpers/i18n', 'helpers/sprintf', 'app/actions/alert-actions', 'app/actions/beambox', 'app/actions/progress-actions', 'app/constants/progress-constants', 'app/actions/input-lightbox-actions', 'app/constants/device-constants', 'helpers/api/control', 'helpers/api/3d-scan-control', 'helpers/usb-checker', 'helpers/api/touch', 'helpers/api/discover', 'helpers/api/config', 'app/actions/global-actions', 'app/constants/input-lightbox-constants', 'helpers/device-list', 'helpers/api/camera', 'helpers/api/simple-websocket', 'helpers/socket-master', 'helpers/device-error-handler', 'helpers/array-findindex'], function ($, i18n, sprintf, AlertActions, BeamboxActions, ProgressActions, ProgressConstants, InputLightboxActions, DeviceConstants, DeviceController, ScanController, UsbChecker, Touch, Discover, Config, GlobalActions, InputLightBoxConstants, DeviceList, Camera, SimpleWebsocket, Sm, DeviceErrorHandler) {
+
+    var lang = i18n.get(),
+        SocketMaster = void 0,
+        defaultPrinter = void 0,
         defaultPrinterWarningShowed = false,
         _instance = null,
         _stopChangingFilament = false,
-        _stopChangingFilamentCallback,
+        _stopChangingFilamentCallback = void 0,
         _selectedDevice = {},
         _deviceNameMap = {},
         _controllerMap = {},
-        _device,
+        _device = void 0,
         _wasKilled = false,
         usbDeviceReport = {},
         _devices = [],
@@ -70,14 +26,14 @@ define([
 
     // Better select device
     function select(device, opts) {
-        let d = $.Deferred();
-        selectDevice(device).then((result) => {
+        var d = $.Deferred();
+        selectDevice(device).then(function (result) {
             if (result == DeviceConstants.CONNECTED) {
                 d.resolve();
             } else {
                 d.reject(lang.message.connectionTimeout);
             }
-        }, (error) => {
+        }, function (error) {
             console.error('Selection error in DeviceMaster. Should handle error here', error);
         });
 
@@ -86,31 +42,28 @@ define([
 
     // Deprecated!
     function selectDevice(device, deferred) {
-        const goAuth = (uuid) => {
+        var _this = this;
+
+        var goAuth = function goAuth(uuid) {
             ProgressActions.close();
             _selectedDevice = {};
 
-            const handleSubmit = (password) => {
+            var handleSubmit = function handleSubmit(password) {
                 ProgressActions.open(ProgressConstants.NONSTOP_WITH_MESSAGE, lang.message.authenticating);
 
-                auth(device.uuid, password).done((data) => {
+                auth(device.uuid, password).done(function (data) {
                     device.plaintext_password = password;
                     selectDevice(device, d);
-                })
-                    .fail((response) => {
-                        let message = (
-                            false === response.reachable ?
-                                lang.select_printer.unable_to_connect :
-                                lang.select_printer.auth_failure
-                        );
+                }).fail(function (response) {
+                    var message = false === response.reachable ? lang.select_printer.unable_to_connect : lang.select_printer.auth_failure;
 
-                        goAuth(device.uuid);
+                    goAuth(device.uuid);
 
-                        AlertActions.showPopupError('device-auth-fail', message);
-                    });
+                    AlertActions.showPopupError('device-auth-fail', message);
+                });
             };
 
-            const callback = {
+            var callback = {
                 caption: sprintf(lang.input_machine_password.require_password, _device.name),
                 inputHeader: lang.input_machine_password.password,
                 confirmText: lang.input_machine_password.connect,
@@ -120,24 +73,29 @@ define([
 
             InputLightboxActions.open('auth', callback);
         };
-        const createDeviceController = (uuid, availableUsbChannel = -1, success) => {
+        var createDeviceController = function createDeviceController(uuid) {
+            var availableUsbChannel = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;
+            var success = arguments[2];
+
             return DeviceController(device.uuid, {
                 availableUsbChannel: availableUsbChannel,
-                onConnect: function (response, options) {
+                onConnect: function onConnect(response, options) {
                     d.notify(response);
 
                     if (response.status.toUpperCase() === DeviceConstants.CONNECTED) {
-                        if (options == null || (options && !options.dedicated)) {
+                        if (options == null || options && !options.dedicated) {
                             ProgressActions.close();
                         }
-                        let exist = _devices.some(dev => { return dev.uuid === device.uuid; });
+                        var exist = _devices.some(function (dev) {
+                            return dev.uuid === device.uuid;
+                        });
                         if (!exist) {
                             _devices.push(device);
                         }
                         success(true);
                     }
                 },
-                onError: function (response) {
+                onError: function onError(response) {
                     console.log('createDeviceController onError', response);
                     ProgressActions.close();
                     // TODO: shouldn't do replace
@@ -153,40 +111,32 @@ define([
 
                             if (device.password) {
                                 goAuth(_device.uuid);
-                            }
-                            else {
+                            } else {
                                 ProgressActions.open(ProgressConstants.NONSTOP, sprintf(lang.message.connectingMachine, _device.name));
 
-                                auth(_device.uuid, '').done((data) => {
+                                auth(_device.uuid, '').done(function (data) {
                                     selectDevice(device, d);
-                                })
-                                    .fail(() => {
-                                        ProgressActions.close();
-                                        AlertActions.showPopupError(
-                                            'auth-error-with-diff-computer',
-                                            lang.message.need_1_1_7_above
-                                        );
-                                    });
+                                }).fail(function () {
+                                    ProgressActions.close();
+                                    AlertActions.showPopupError('auth-error-with-diff-computer', lang.message.need_1_1_7_above);
+                                });
                             }
                             break;
                         case DeviceConstants.MONITOR_TOO_OLD:
-                            AlertActions.showPopupError(
-                                'fatal-occurred',
-                                lang.message.monitor_too_old.content,
-                                lang.message.monitor_too_old.caption
-                            );
+                            AlertActions.showPopupError('fatal-occurred', lang.message.monitor_too_old.content, lang.message.monitor_too_old.caption);
                             break;
                         default:
-                            let message = lang.message.unknown_error;
+                            var message = lang.message.unknown_error;
 
                             if (response.error === 'NOT_FOUND' || response.error === 'DISCONNECTED') {
                                 // if connected usb is the usb version of default device
                                 // if(device.serial === self.usbProfile.serial) {
-                                if (_devices.some(d => d.serial === device.serial)) {
+                                if (_devices.some(function (d) {
+                                    return d.serial === device.serial;
+                                })) {
                                     success(false);
                                     return;
-                                }
-                                else {
+                                } else {
                                     message = lang.message.unable_to_find_machine;
                                 }
                             }
@@ -196,13 +146,10 @@ define([
                             }
 
                             success(false);
-                            AlertActions.showPopupError(
-                                'unhandle-exception',
-                                message
-                            );
+                            AlertActions.showPopupError('unhandle-exception', message);
                     }
                 },
-                onFatal: function (response) {
+                onFatal: function onFatal(response) {
                     console.log('createDeviceController onFatal', response);
                     // process fatal
                     if (!_wasKilled) {
@@ -210,9 +157,9 @@ define([
                         _wasKilled = false;
                     }
 
-                    const removeTimedOutConnection = (uuid) => {
-                        let newConnectedDevice = [];
-                        _devices.forEach(d => {
+                    var removeTimedOutConnection = function removeTimedOutConnection(uuid) {
+                        var newConnectedDevice = [];
+                        _devices.forEach(function (d) {
                             if (d.uuid != uuid) {
                                 newConnectedDevice.push(d);
                             }
@@ -228,7 +175,7 @@ define([
                 }
             });
         };
-        const initSocketMaster = () => {
+        var initSocketMaster = function initSocketMaster() {
             if (device && typeof _controllerMap[device.uuid] !== 'undefined') {
                 _device.controller = _controllerMap[device.uuid];
                 return;
@@ -240,43 +187,35 @@ define([
             //*******************************************************************
             // just for backup, can be delete if everything is fine
             // if usb not detected but device us using usb
-            if (
-                typeof self !== 'undefined' &&
-                    !_devices.some(d => d.addr === device.addr) &&
-                    // self.availableUsbChannel === -1 &&
-                    device.source === 'h2h'
-            ) {
+            if (typeof self !== 'undefined' && !_devices.some(function (d) {
+                return d.addr === device.addr;
+            }) &&
+            // self.availableUsbChannel === -1 &&
+            device.source === 'h2h') {
                 device = getDeviceBySerialFromAvailableList(device.serial, false);
             }
             //********************************************************************/
 
             // if availableUsbChannel has been defined
-            if (
-                typeof self !== 'undefined' &&
-                    typeof self.availableUsbChannel !== 'undefined' &&
-                    device.source === 'h2h'
-            ) {
-                _device.controller = createDeviceController(null, this.availableUsbChannel, (success) => {
+            if (typeof self !== 'undefined' && typeof self.availableUsbChannel !== 'undefined' && device.source === 'h2h') {
+                _device.controller = createDeviceController(null, _this.availableUsbChannel, function (success) {
                     console.log('_device.controller', _device.controller);
                     console.log('success', success);
                     if (success) {
                         d.resolve(DeviceConstants.CONNECTED);
-                    }
-                    else {
+                    } else {
                         // createDeviceController will auto reject with errors
                     }
                 });
-            }
-            else {
-                _device.controller = createDeviceController(device.uuid, null, (success) => {
+            } else {
+                _device.controller = createDeviceController(device.uuid, null, function (success) {
                     if (success) {
                         d.resolve(DeviceConstants.CONNECTED);
-                    }
-                    else {
+                    } else {
                         // if default device wifi is not available, we use usb
                         // if(_device.serial === self.usbProfile.serial) {
-                        let foundDevice;
-                        _devices.forEach(d => {
+                        var foundDevice = void 0;
+                        _devices.forEach(function (d) {
                             if (d.source === 'h2h' && d.serial === _device.serial) {
                                 console.log('found usb version', d);
                                 foundDevice = d;
@@ -287,8 +226,7 @@ define([
                             foundDevice.uuid = foundDevice.addr;
                             foundDevice.name = foundDevice.nickname;
                             d.resolve(DeviceConstants.CONNECTED, foundDevice);
-                        }
-                        else {
+                        } else {
                             console.log('create device action failed');
                         }
                     }
@@ -299,12 +237,14 @@ define([
             SocketMaster.setWebSocket(_device.controller);
         };
 
-        let d = deferred || $.Deferred();
+        var d = deferred || $.Deferred();
 
         if (device) {
-        // Match the device from the newest received device list
-            let latestDevice = _availableDevices.filter(d => d.serial === device.serial && d.source === device.source),
-                self = this;
+            // Match the device from the newest received device list
+            var latestDevice = _availableDevices.filter(function (d) {
+                return d.serial === device.serial && d.source === device.source;
+            }),
+                _self = this;
 
             Object.assign(_selectedDevice, latestDevice[0]);
 
@@ -312,8 +252,7 @@ define([
                 _device = _switchDevice(device.uuid);
                 SocketMaster.setWebSocket(_controllerMap[device.uuid]);
                 d.resolve(DeviceConstants.CONNECTED);
-            }
-            else {
+            } else {
                 ProgressActions.open(ProgressConstants.NONSTOP, sprintf(lang.message.connectingMachine, device.name));
                 _device = {
                     uuid: device.uuid,
@@ -333,21 +272,21 @@ define([
     function auth(uuid, password) {
         ProgressActions.open(ProgressConstants.NONSTOP, lang.message.authenticating);
 
-        let d = $.Deferred(),
+        var d = $.Deferred(),
             opts = {
-                onError: function (data) {
-                    ProgressActions.close();
-                    d.reject(data);
-                },
-                onSuccess: function (data) {
-                    ProgressActions.close();
-                    d.resolve(data);
-                },
-                onFail: function (data) {
-                    ProgressActions.close();
-                    d.reject(data);
-                }
-            };
+            onError: function onError(data) {
+                ProgressActions.close();
+                d.reject(data);
+            },
+            onSuccess: function onSuccess(data) {
+                ProgressActions.close();
+                d.resolve(data);
+            },
+            onFail: function onFail(data) {
+                ProgressActions.close();
+                d.reject(data);
+            }
+        };
 
         Touch(opts).send(uuid, password);
 
@@ -355,17 +294,17 @@ define([
     }
 
     function reconnectWs() {
-        let d = $.Deferred();
+        var d = $.Deferred();
         _device.controller = DeviceController(_selectedDevice.uuid, {
             availableUsbChannel: _selectedDevice.source === 'h2h' ? _selectedDevice.addr : -1,
-            onConnect: function (response) {
+            onConnect: function onConnect(response) {
                 d.notify(response);
 
                 if (response.status.toUpperCase() === DeviceConstants.CONNECTED) {
                     d.resolve(DeviceConstants.CONNECTED);
                 }
             },
-            onError: function (response) {
+            onError: function onError(response) {
                 ProgressActions.close();
                 // TODO: shouldn't do replace
                 response.error = response.error.replace(/^.*\:\s+(\w+)$/g, '$1');
@@ -377,37 +316,26 @@ define([
                     case DeviceConstants.AUTH_FAILED:
                         if (device.password) {
                             goAuth(_device.uuid);
-                        }
-                        else {
+                        } else {
                             ProgressActions.open(ProgressConstants.NONSTOP_WITH_MESSAGE, lang.message.authenticating);
-                            auth(_device.uuid, '').then((data) => {
+                            auth(_device.uuid, '').then(function (data) {
                                 ProgressActions.open(ProgressConstants.NONSTOP_WITH_MESSAGE, sprintf(lang.message.connectingMachine, _device.name));
                                 selectDevice(device, d);
-                            }).fail(() => {
+                            }).fail(function () {
                                 ProgressActions.close();
-                                AlertActions.showPopupError(
-                                    'auth-error-with-diff-computer',
-                                    lang.message.need_1_1_7_above
-                                );
+                                AlertActions.showPopupError('auth-error-with-diff-computer', lang.message.need_1_1_7_above);
                             });
                         }
                         break;
                     case DeviceConstants.MONITOR_TOO_OLD:
                         ProgressActions.close();
-                        AlertActions.showPopupError(
-                            'fatal-occurred',
-                            lang.message.monitor_too_old.content,
-                            lang.message.monitor_too_old.caption
-                        );
+                        AlertActions.showPopupError('fatal-occurred', lang.message.monitor_too_old.content, lang.message.monitor_too_old.caption);
                         break;
                     default:
-                        AlertActions.showPopupError(
-                            'unhandle-exception',
-                            lang.message.unknown_error
-                        );
+                        AlertActions.showPopupError('unhandle-exception', lang.message.unknown_error);
                 }
             },
-            onFatal: function (response) {
+            onFatal: function onFatal(response) {
                 // if channel is not available, (opcode -1),
                 // default in createDeviceController will catch first
             }
@@ -424,13 +352,13 @@ define([
     }
 
     function uploadToDirectory(data, path, fileName) {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        SocketMaster.addTask('upload', data, path, fileName).then(() => {
+        SocketMaster.addTask('upload', data, path, fileName).then(function () {
             d.resolve();
-        }).progress((progress) => {
+        }).progress(function (progress) {
             d.notify(progress);
-        }).fail((error) => {
+        }).fail(function (error) {
             d.reject(error);
         });
 
@@ -438,39 +366,38 @@ define([
     }
 
     function go(data) {
-        let d = $.Deferred();
+        var d = $.Deferred();
         if (!data || !(data instanceof Blob)) {
             d.resolve(DeviceConstants.READY);
-        }
-        else {
-            const handleOk = () => { d.resolve(); };
-            const handleProgress = (progress) => { d.notify(progress); };
-            const handleError = (error) => {
+        } else {
+            var handleOk = function handleOk() {
+                d.resolve();
+            };
+            var handleProgress = function handleProgress(progress) {
+                d.notify(progress);
+            };
+            var handleError = function handleError(error) {
                 d.reject(error);
             };
 
-            SocketMaster.addTask('upload', data).then(() => {
+            SocketMaster.addTask('upload', data).then(function () {
                 SocketMaster.addTask('start').then(handleOk).fail(handleError);
-            })
-                .progress(handleProgress)
-                .fail(handleError);
-
+            }).progress(handleProgress).fail(handleError);
         }
 
         return d.promise();
     }
 
     function goFromFile(path, fileName) {
-        let d = $.Deferred();
-        SocketMaster.addTask('select', path, fileName).then((selectResult) => {
+        var d = $.Deferred();
+        SocketMaster.addTask('select', path, fileName).then(function (selectResult) {
             if (selectResult.status.toUpperCase() === DeviceConstants.OK) {
-                SocketMaster.addTask('start').then((startResult) => {
+                SocketMaster.addTask('start').then(function (startResult) {
                     d.resolve(startResult);
-                }).fail((error) => {
+                }).fail(function (error) {
                     d.reject(error);
                 });
-            }
-            else {
+            } else {
                 d.resolve({ status: 'error' });
             }
         });
@@ -478,93 +405,94 @@ define([
     }
 
     function waitTillCompleted() {
-        let d = $.Deferred(),
+        var d = $.Deferred(),
             statusChanged = false;
 
-        let t = setInterval(() => {
-            SocketMaster.addTask('report')
-                .then(r => {
-                    d.notify(r, t);
-                    let { st_id, error } = r.device_status;
-                    if (st_id === 64) {
-                        clearInterval(t);
-                        setTimeout(() => {
-                            quit().then(() => {
-                                d.resolve();
-                            }).fail(() => {
-                                d.reject('Quit failed');
-                            });
-                        }, 2000);
-                    } else if ((st_id === 128 || st_id === 48 || st_id === 36) && error && error.length > 0) { // Error occured
-                        clearInterval(t);
-                        d.reject(error);
-                    } else if (st_id === 128) {
-                        clearInterval(t);
-                        d.reject(error);
-                    } else if (st_id === 0) {
-                        // Resolve if the status was running and some how skipped the completed part
-                        if (statusChanged) {
-                            clearInterval(t);
+        var t = setInterval(function () {
+            SocketMaster.addTask('report').then(function (r) {
+                d.notify(r, t);
+                var _r$device_status = r.device_status,
+                    st_id = _r$device_status.st_id,
+                    error = _r$device_status.error;
+
+                if (st_id === 64) {
+                    clearInterval(t);
+                    setTimeout(function () {
+                        quit().then(function () {
                             d.resolve();
-                        }
-                    } else {
-                        statusChanged = true;
+                        }).fail(function () {
+                            d.reject('Quit failed');
+                        });
+                    }, 2000);
+                } else if ((st_id === 128 || st_id === 48 || st_id === 36) && error && error.length > 0) {
+                    // Error occured
+                    clearInterval(t);
+                    d.reject(error);
+                } else if (st_id === 128) {
+                    clearInterval(t);
+                    d.reject(error);
+                } else if (st_id === 0) {
+                    // Resolve if the status was running and some how skipped the completed part
+                    if (statusChanged) {
+                        clearInterval(t);
+                        d.resolve();
                     }
-                });
+                } else {
+                    statusChanged = true;
+                }
+            });
         }, 2000);
 
         return d.promise();
     }
 
     function runMovementTests() {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        fetch(DeviceConstants.MOVEMENT_TEST).then(res => res.blob()).then(blob => {
-            go(blob).fail(() => {
+        fetch(DeviceConstants.MOVEMENT_TEST).then(function (res) {
+            return res.blob();
+        }).then(function (blob) {
+            go(blob).fail(function () {
                 // Error while uploading task
                 d.reject(['UPLOAD_FAILED']);
-            })
-                .then(() => {
-                    ProgressActions.open(ProgressConstants.NONSTOP, lang.message.runningTests);
-                    waitTillCompleted().fail((error) => {
-                        // Error while running test
-                        d.reject(error);
-                    }).then(() => {
-                        // Completed
-                        d.resolve();
-                    });
+            }).then(function () {
+                ProgressActions.open(ProgressConstants.NONSTOP, lang.message.runningTests);
+                waitTillCompleted().fail(function (error) {
+                    // Error while running test
+                    d.reject(error);
+                }).then(function () {
+                    // Completed
+                    d.resolve();
                 });
+            });
         });
 
         return d.promise();
     }
 
     function runBeamboxCameraTest() {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        fetch(DeviceConstants.BEAMBOX_CAMERA_TEST).then(res => res.blob()).then(blob => {
-            go(blob)
-                .fail(() => {
-                    d.reject('UPLOAD_FAILED'); // Error while uploading task
-                })
-                .then(() => {
-                    ProgressActions.open(ProgressConstants.NONSTOP, lang.camera_calibration.drawing_calibration_image);
-                    waitTillCompleted()
-                        .fail((err) => {
-                            d.reject(err); // Error while running test
-                        })
-                        .then(() => {
-                            d.resolve();
-                        });
-
+        fetch(DeviceConstants.BEAMBOX_CAMERA_TEST).then(function (res) {
+            return res.blob();
+        }).then(function (blob) {
+            go(blob).fail(function () {
+                d.reject('UPLOAD_FAILED'); // Error while uploading task
+            }).then(function () {
+                ProgressActions.open(ProgressConstants.NONSTOP, lang.camera_calibration.drawing_calibration_image);
+                waitTillCompleted().fail(function (err) {
+                    d.reject(err); // Error while running test
+                }).then(function () {
+                    d.resolve();
                 });
+            });
         });
 
         return d.promise();
     }
 
     function resume() {
-        return SocketMaster.addTask('resume')
+        return SocketMaster.addTask('resume');
     }
 
     function pause() {
@@ -572,8 +500,8 @@ define([
     }
 
     function stop() {
-        let d = $.Deferred();
-        SocketMaster.addTask('abort').then(r => {
+        var d = $.Deferred();
+        SocketMaster.addTask('abort').then(function (r) {
             d.resolve(r);
         });
         return d.promise();
@@ -597,10 +525,10 @@ define([
 
     function killSelf() {
         _wasKilled = true;
-        let d = $.Deferred();
-        _device.controller.killSelf().then(response => {
+        var d = $.Deferred();
+        _device.controller.killSelf().then(function (response) {
             d.resolve(response);
-        }).always(() => {
+        }).always(function () {
             reconnectWs();
         });
         return d.promise();
@@ -619,22 +547,22 @@ define([
     }
 
     function deleteFile(path, fileName) {
-        let fileNameWithPath = `${path}/${fileName}`;
+        var fileNameWithPath = path + '/' + fileName;
         return SocketMaster.addTask('deleteFile', fileNameWithPath);
     }
 
     function downloadFile(path, fileName) {
-        return SocketMaster.addTask('downloadFile', `${path}/${fileName}`);
+        return SocketMaster.addTask('downloadFile', path + '/' + fileName);
     }
 
     function readyCamera() {
-        let d = $.Deferred();
+        var d = $.Deferred();
         _device.scanController = ScanController(_device.uuid, {
             availableUsbChannel: this.availableUsbChannel,
-            onReady: function () {
+            onReady: function onReady() {
                 d.resolve('');
             },
-            onError: function (error) {
+            onError: function onError(error) {
                 AlertActions.showPopupError('', error);
             }
         });
@@ -644,9 +572,9 @@ define([
 
     function changeFilament(type, flexible) {
         _stopChangingFilament = false;
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        (async function(){
+        (async function () {
             await SocketMaster.addTask('enterMaintainMode');
 
             if (_stopChangingFilament) {
@@ -663,7 +591,7 @@ define([
                 return;
             }
 
-            await SocketMaster.addTask('changeFilament', type, flexible).progress((response) => {
+            await SocketMaster.addTask('changeFilament', type, flexible).progress(function (response) {
                 if (_stopChangingFilament) {
                     d.reject({ error: ['CANCEL'] });
                     _stopChangingFilamentCallback();
@@ -679,82 +607,85 @@ define([
             }
 
             d.resolve();
-        })().catch(response => d.reject(response));
+        })().catch(function (response) {
+            return d.reject(response);
+        });
         return d.promise();
     }
 
     function stopChangingFilament() {
-        let d = $.Deferred();
-        _stopChangingFilamentCallback = () => {
+        var d = $.Deferred();
+        _stopChangingFilamentCallback = function _stopChangingFilamentCallback() {
             d.resolve();
         };
         _stopChangingFilament = true;
         return d.promise();
-
     }
 
     function changeFilamentDuringPause(type) {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        const initOperation = () => {
-            return new Promise(resolve => {
-                SocketMaster.addTask('startToolheadOperation').then(r => {
+        var initOperation = function initOperation() {
+            return new Promise(function (resolve) {
+                SocketMaster.addTask('startToolheadOperation').then(function (r) {
                     resolve(r);
                 });
             });
         };
 
-        const waitForTemperature = () => {
-            return new Promise(resolve => {
-                let fluctuation = 3;
-                let t = setInterval(() => {
-                    SocketMaster.addTask('report').then(r => {
+        var waitForTemperature = function waitForTemperature() {
+            return new Promise(function (resolve) {
+                var fluctuation = 3;
+                var t = setInterval(function () {
+                    SocketMaster.addTask('report').then(function (r) {
                         d.notify(r, t);
-                        let { rt, tt } = r.device_status;
-                        if (rt[0] && tt[0]) {
-                            let current = Math.round(rt[0]),  // current temperature rounded
-                                target = tt[0];              // goal temperature
+                        var _r$device_status2 = r.device_status,
+                            rt = _r$device_status2.rt,
+                            tt = _r$device_status2.tt;
 
-                            if (
-                                current >= target - fluctuation &&  // min
-                                    current <= target + fluctuation     // max
+                        if (rt[0] && tt[0]) {
+                            var current = Math.round(rt[0]),
+                                // current temperature rounded
+                            target = tt[0]; // goal temperature
+
+                            if (current >= target - fluctuation && // min
+                            current <= target + fluctuation // max
                             ) {
-                                clearInterval(t);
-                                resolve();
-                            }
+                                    clearInterval(t);
+                                    resolve();
+                                }
                         };
                     });
                 }, 3000);
             });
         };
 
-        const startOperation = () => {
-            return new Promise(resolve => {
-                SocketMaster.addTask('changeFilamentDuringPause', type).always(r => {
+        var startOperation = function startOperation() {
+            return new Promise(function (resolve) {
+                SocketMaster.addTask('changeFilamentDuringPause', type).always(function (r) {
                     resolve(r);
                 });
             });
         };
 
-        const endLoading = () => {
-            return new Promise(resolve => {
-                SocketMaster.addTask('endLoadingDuringPause').always(r => {
+        var endLoading = function endLoading() {
+            return new Promise(function (resolve) {
+                SocketMaster.addTask('endLoadingDuringPause').always(function (r) {
                     resolve(r);
                 });
             });
         };
 
-        const monitorStatus = () => {
-            return new Promise(resolve => {
-                let t = setInterval(() => {
-                    getReport().then(r => {
+        var monitorStatus = function monitorStatus() {
+            return new Promise(function (resolve) {
+                var t = setInterval(function () {
+                    getReport().then(function (r) {
                         r.loading = true;
                         // if button is pressed from the machine, status will change from LOAD_FILAMENT to PAUSE
                         if (r.st_label === 'PAUSED' || r.st_label === 'RESUMING') {
                             clearInterval(t);
                             resolve();
-                        }
-                        else {
+                        } else {
                             d.notify(r, t);
                         }
                     });
@@ -762,7 +693,7 @@ define([
             });
         };
 
-        const operation = async () => {
+        var operation = async function operation() {
             await initOperation();
             await waitForTemperature();
             await startOperation();
@@ -788,11 +719,11 @@ define([
     }
 
     function detectHead() {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        SocketMaster.addTask('getHeadInfo@maintain').then((response) => {
+        SocketMaster.addTask('getHeadInfo@maintain').then(function (response) {
             response.module ? d.resolve() : d.reject(response);
-        }).fail(() => {
+        }).fail(function () {
             d.reject();
         });
 
@@ -800,16 +731,15 @@ define([
     }
 
     function maintainMove(args) {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        SocketMaster.addTask('maintainMove', args)
-            .then((result) => {
-                if (result.status === 'ok') {
-                    d.resolve();
-                }
-            }).fail(() => {
-                d.reject();
-            });
+        SocketMaster.addTask('maintainMove', args).then(function (result) {
+            if (result.status === 'ok') {
+                d.resolve();
+            }
+        }).fail(function () {
+            d.reject();
+        });
 
         return d.promise();
     }
@@ -844,27 +774,26 @@ define([
     }
 
     function reconnect() {
-        let d = $.Deferred();
+        var d = $.Deferred();
         _devices.some(function (device, i) {
             if (device.uuid === _selectedDevice.uuid) {
                 _devices.splice(i, 1);
             }
         });
 
-        killSelf().always(() => {
+        killSelf().always(function () {
             selectDevice(_selectedDevice);
         });
         return d.promise();
     }
 
     function kickChangeFilament() {
-        let d = $.Deferred();
+        var d = $.Deferred();
         //return result is success always even the USB disconnected on device side.
         //need to be figure it out.
-        selectDevice(_selectedDevice).then((result) => {
+        selectDevice(_selectedDevice).then(function (result) {
             kick();
             d.resolve();
-
         });
         return d.promise();
     }
@@ -872,24 +801,24 @@ define([
     // get functions
     function getReport() {
         // Jim Kang's code below
-        let d = $.Deferred();
-        let timeout;
+        var d = $.Deferred();
+        var timeout = void 0;
 
-        SocketMaster.addTask('report').then((result) => {
+        SocketMaster.addTask('report').then(function (result) {
             // Set timeout
-            timeout = setTimeout(() => {
+            timeout = setTimeout(function () {
                 d.reject({ status: 'fatal', error: ['TIMEOUT'] });
             }, 10 * 1000);
 
             // Force update st_label for a backend inconsistancy
-            let s = result.device_status;
+            var s = result.device_status;
             if (s.st_id === DeviceConstants.status.ABORTED) {
                 s.st_label = 'ABORTED';
             }
             d.resolve(s);
-        }).fail((error) => {
+        }).fail(function (error) {
             d.reject(error);
-        }).always(() => {
+        }).always(function () {
             clearTimeout(timeout);
         });
         return d.promise();;
@@ -897,14 +826,16 @@ define([
 
     function getSelectedDevice() {
         // retrieve the whole device information from discover.js
-        let foundDevices = _availableDevices.filter(d => d.uuid === _device.uuid);
+        var foundDevices = _availableDevices.filter(function (d) {
+            return d.uuid === _device.uuid;
+        });
 
         return foundDevices.length > 0 ? foundDevices[0] : _device;
     }
 
     function getPreviewInfo() {
-        let d = $.Deferred();
-        SocketMaster.addTask('getPreview').then((result) => {
+        var d = $.Deferred();
+        SocketMaster.addTask('getPreview').then(function (result) {
             d.resolve(result);
         });
         return d.promise();
@@ -952,7 +883,7 @@ define([
     }
 
     function _removeConnection(uuid) {
-        let index = _devices.findIndex(function (d) {
+        var index = _devices.findIndex(function (d) {
             return d.uuid === uuid;
         });
 
@@ -962,7 +893,7 @@ define([
     }
 
     function _switchDevice(uuid) {
-        let index = _devices.findIndex(function (d) {
+        var index = _devices.findIndex(function (d) {
             return d.uuid === uuid;
         });
 
@@ -998,7 +929,7 @@ define([
     }
 
     function calibrate(opts) {
-        let d = $.Deferred(),
+        var d = $.Deferred(),
             debug_data = {};
 
         opts = opts || {};
@@ -1006,25 +937,29 @@ define([
         opts.doubleZProbe = opts.doubleZProbe === null ? false : opts.doubleZProbe;
         opts.withoutZProbe = opts.withoutZProbe === null ? false : opts.withoutZProbe;
 
+        var processError = function processError() {
+            var resp = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-        const processError = (resp = {}) => {
-            if (typeof resp === 'string') { resp = { error: [resp] }; }
-            if (resp.error && resp.error === 'EDGE_CASE') { return; }
+            if (typeof resp === 'string') {
+                resp = { error: [resp] };
+            }
+            if (resp.error && resp.error === 'EDGE_CASE') {
+                return;
+            }
             DeviceErrorHandler.processDeviceMasterResponse(resp);
             AlertActions.showPopupError('device-busy', DeviceErrorHandler.translate(resp.error));
             SocketMaster.addTask('endMaintainMode');
         };
 
-        const step1 = () => {
-            let _d = $.Deferred();
-            SocketMaster.addTask('enterMaintainMode').then((response) => {
+        var step1 = function step1() {
+            var _d = $.Deferred();
+            SocketMaster.addTask('enterMaintainMode').then(function (response) {
                 if (response.status === 'ok') {
                     return SocketMaster.addTask('getHeadInfo@maintain');
-                }
-                else {
+                } else {
                     _d.reject(response);
                 }
-            }).then((headResp) => {
+            }).then(function (headResp) {
                 if (opts.forceExtruder) {
                     if (headResp.module === null) {
                         return $.Deferred().reject({ module: null, error: ['HEAD_ERROR', 'HEAD_OFFLINE'] });
@@ -1033,32 +968,32 @@ define([
                     }
                 }
                 return SocketMaster.addTask('maintainHome');
-            }).then((response) => {
+            }).then(function (response) {
                 response.status === 'ok' ? _d.resolve() : _d.reject();
-            }).fail((error) => {
+            }).fail(function (error) {
                 _d.reject(error);
             });
             return _d.promise();
         };
 
-        const step2 = () => {
-            let _d = $.Deferred();
-            SocketMaster.addTask(opts.doubleZProbe ? 'calibrateDoubleZProbe@maintain' : (opts.withoutZProbe ? 'calibrateWithoutZProbe@maintain' : 'calibrate@maintain')).then((response) => {
+        var step2 = function step2() {
+            var _d = $.Deferred();
+            SocketMaster.addTask(opts.doubleZProbe ? 'calibrateDoubleZProbe@maintain' : opts.withoutZProbe ? 'calibrateWithoutZProbe@maintain' : 'calibrate@maintain').then(function (response) {
                 debug_data = response.debug;
                 return SocketMaster.addTask('endMaintainMode');
-            }).then(() => {
+            }).then(function () {
                 _d.resolve();
-            }).fail((error) => {
+            }).fail(function (error) {
                 _d.reject(error);
             });
             return _d.promise();
         };
 
-        step1().then(() => {
+        step1().then(function () {
             return step2();
-        }).then(() => {
+        }).then(function () {
             d.resolve(debug_data);
-        }).fail((error) => {
+        }).fail(function (error) {
             console.log(error);
             processError(error);
             d.reject(error);
@@ -1067,33 +1002,36 @@ define([
         return d.promise();
     }
 
-
     function zprobe(opts) {
-        let d = $.Deferred(),
+        var d = $.Deferred(),
             debug_data = {};
 
         opts = opts || {};
         opts.forceExtruder = opts.forceExtruder === null ? true : opts.forceExtruder;
 
+        var processError = function processError() {
+            var resp = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-        const processError = (resp = {}) => {
-            if (typeof resp === 'string') { resp = { error: [resp] }; }
-            if (resp.error && resp.error === 'EDGE_CASE') { return; }
+            if (typeof resp === 'string') {
+                resp = { error: [resp] };
+            }
+            if (resp.error && resp.error === 'EDGE_CASE') {
+                return;
+            }
             DeviceErrorHandler.processDeviceMasterResponse(resp);
             AlertActions.showPopupError('device-busy', DeviceErrorHandler.translate(resp.error));
             SocketMaster.addTask('endMaintainMode');
         };
 
-        const step1 = () => {
-            let _d = $.Deferred();
-            SocketMaster.addTask('enterMaintainMode').then((response) => {
+        var step1 = function step1() {
+            var _d = $.Deferred();
+            SocketMaster.addTask('enterMaintainMode').then(function (response) {
                 if (response.status === 'ok') {
                     return SocketMaster.addTask('getHeadInfo@maintain');
-                }
-                else {
+                } else {
                     _d.reject(response);
                 }
-            }).then((headResp) => {
+            }).then(function (headResp) {
                 if (opts.forceExtruder) {
                     if (headResp.module === null) {
                         return $.Deferred().reject({ module: null, error: ['HEAD_ERROR', 'HEAD_OFFLINE'] });
@@ -1102,32 +1040,32 @@ define([
                     }
                 }
                 return SocketMaster.addTask('maintainHome');
-            }).then((response) => {
+            }).then(function (response) {
                 response.status === 'ok' ? _d.resolve() : _d.reject();
-            }).fail((error) => {
+            }).fail(function (error) {
                 _d.reject(error);
             });
             return _d.promise();
         };
 
-        const step2 = () => {
-            let _d = $.Deferred();
-            SocketMaster.addTask('zprobe@maintain').then((response) => {
+        var step2 = function step2() {
+            var _d = $.Deferred();
+            SocketMaster.addTask('zprobe@maintain').then(function (response) {
                 debug_data = response.debug;
                 return SocketMaster.addTask('endMaintainMode');
-            }).then(() => {
+            }).then(function () {
                 _d.resolve();
-            }).fail((error) => {
+            }).fail(function (error) {
                 _d.reject(error);
             });
             return _d.promise();
         };
 
-        step1().then(() => {
+        step1().then(function () {
             return step2();
-        }).then(() => {
+        }).then(function () {
             d.resolve(debug_data);
-        }).fail((error) => {
+        }).fail(function (error) {
             console.log(error);
             processError(error);
             d.reject(error);
@@ -1136,38 +1074,38 @@ define([
         return d.promise();
     }
 
-
     function home() {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        const processError = (resp = {}) => {
+        var processError = function processError() {
+            var resp = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
             DeviceErrorHandler.processDeviceMasterResponse(resp);
             AlertActions.showPopupError('device-busy', DeviceErrorHandler.translate(resp.error));
             SocketMaster.addTask('endMaintainMode');
         };
 
-        const step1 = () => {
-            let _d = $.Deferred();
-            SocketMaster.addTask('enterMaintainMode').then((response) => {
+        var step1 = function step1() {
+            var _d = $.Deferred();
+            SocketMaster.addTask('enterMaintainMode').then(function (response) {
                 if (response.status === 'ok') {
                     return SocketMaster.addTask('maintainHome');
-                }
-                else {
+                } else {
                     _d.reject(response);
                 }
-            }).then((response) => {
+            }).then(function (response) {
                 response.status === 'ok' ? _d.resolve() : _d.reject();
-            }).fail((error) => {
+            }).fail(function (error) {
                 _d.reject(error);
             });
             return _d.promise();
         };
 
-        step1().then(() => {
+        step1().then(function () {
             return SocketMaster.addTask('endMaintainMode');
-        }).then(() => {
+        }).then(function () {
             d.resolve();
-        }).fail((error) => {
+        }).fail(function (error) {
             processError(error);
             d.reject(error);
         });
@@ -1176,39 +1114,39 @@ define([
     }
 
     function cleanCalibration() {
-        let d = $.Deferred();
+        var d = $.Deferred();
 
-        const processError = (resp = {}) => {
+        var processError = function processError() {
+            var resp = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
             DeviceErrorHandler.processDeviceMasterResponse(resp);
             AlertActions.showPopupError('device-busy', DeviceErrorHandler.translate(resp.error));
             SocketMaster.addTask('endMaintainMode');
         };
 
-        const step1 = () => {
-            let _d = $.Deferred();
-            SocketMaster.addTask('enterMaintainMode').then(() => {
+        var step1 = function step1() {
+            var _d = $.Deferred();
+            SocketMaster.addTask('enterMaintainMode').then(function () {
                 return SocketMaster.addTask('maintainHome');
-            })
-                .then((response) => {
-                    if (response.status === 'ok') {
-                        return SocketMaster.addTask('calibrate', true);
-                    }
-                    else {
-                        _d.reject(response);
-                    }
-                }).then((response) => {
-                    response.status === 'ok' ? _d.resolve() : _d.reject();
-                }).fail((error) => {
-                    _d.reject(error);
-                });
+            }).then(function (response) {
+                if (response.status === 'ok') {
+                    return SocketMaster.addTask('calibrate', true);
+                } else {
+                    _d.reject(response);
+                }
+            }).then(function (response) {
+                response.status === 'ok' ? _d.resolve() : _d.reject();
+            }).fail(function (error) {
+                _d.reject(error);
+            });
             return _d.promise();
         };
 
-        step1().then(() => {
+        step1().then(function () {
             return SocketMaster.addTask('endMaintainMode');
-        }).then(() => {
+        }).then(function () {
             d.resolve();
-        }).fail((error) => {
+        }).fail(function (error) {
             processError(error);
             d.reject(error);
         });
@@ -1218,52 +1156,43 @@ define([
 
     function _scanDeviceError(devices) {
         devices.forEach(function (device) {
-            if (typeof (_errors[device.serial]) === 'string') {
+            if (typeof _errors[device.serial] === 'string') {
                 if (_errors[device.serial] !== device.error_label && device.error_label) {
                     if (window.debug) {
                         AlertActions.showError(device.name + ': ' + device.error_label);
                         _errors[device.serial] = device.error_label;
                     }
-                }
-                else if (!device.error_label) {
+                } else if (!device.error_label) {
                     _errors[device.serial] = '';
                 }
-            }
-            else {
+            } else {
                 _errors[device.serial] = '';
             }
             if (defaultPrinter) {
                 if (defaultPrinter.serial === device.serial) {
-                    if (
-                        device.st_id === DeviceConstants.status.PAUSED_FROM_RUNNING ||
-                            device.st_id === DeviceConstants.status.COMPLETED ||
-                            device.st_id === DeviceConstants.status.ABORTED
-                    ) {
+                    if (device.st_id === DeviceConstants.status.PAUSED_FROM_RUNNING || device.st_id === DeviceConstants.status.COMPLETED || device.st_id === DeviceConstants.status.ABORTED) {
                         if (!defaultPrinterWarningShowed) {
-                            let message = '';
+                            var message = '';
                             if (device.st_id === DeviceConstants.status.COMPLETED) {
-                                message = `${lang.device.completed}`;
-                            }
-                            else if (device.st_id === DeviceConstants.status.ABORTED) {
-                                message = `${lang.device.aborted}`;
-                            }
-                            else {
-                                message = `${lang.device.pausedFromError}`;
+                                message = '' + lang.device.completed;
+                            } else if (device.st_id === DeviceConstants.status.ABORTED) {
+                                message = '' + lang.device.aborted;
+                            } else {
+                                message = '' + lang.device.pausedFromError;
                                 message = device.error_label === '' ? '' : message;
                             }
 
                             if (device.st_id === DeviceConstants.status.COMPLETED) {
                                 AlertActions.showInfo(message, function (growl) {
-                                    growl.remove(function () { });
+                                    growl.remove(function () {});
                                     selectDevice(defaultPrinter).then(function () {
                                         GlobalActions.showMonitor(defaultPrinter);
                                     });
                                 }, true);
-                            }
-                            else {
+                            } else {
                                 if (message !== '') {
                                     AlertActions.showWarning(message, function (growl) {
-                                        growl.remove(function () { });
+                                        growl.remove(function () {});
                                         selectDevice(defaultPrinter).then(function () {
                                             GlobalActions.showMonitor(defaultPrinter);
                                         });
@@ -1274,9 +1203,9 @@ define([
                             defaultPrinterWarningShowed = true;
 
                             if (Config().read('notification') === '1') {
-                                Notification.requestPermission((permission) => {
+                                Notification.requestPermission(function (permission) {
                                     if (permission === 'granted') {
-                                        let notification = new Notification(device.name, {
+                                        var notification = new Notification(device.name, {
                                             icon: 'img/icon-home-s.png',
                                             body: message
                                         });
@@ -1284,8 +1213,7 @@ define([
                                 });
                             }
                         }
-                    }
-                    else {
+                    } else {
                         if ($('#growls').length > 0) {
                             AlertActions.closeNotification();
                             defaultPrinterWarningShowed = false;
@@ -1311,7 +1239,7 @@ define([
     }
 
     function getDeviceSettings(withBacklash, withUpgradeKit, withM666R_MMTest) {
-        let d = $.Deferred(),
+        var d = $.Deferred(),
             settings = {},
             _settings = ['correction', 'filament_detect', 'head_error_level', 'autoresume', 'broadcast', 'enable_cloud'];
 
@@ -1320,12 +1248,7 @@ define([
         }
 
         if (withUpgradeKit) {
-            _settings = [
-                ..._settings,
-                'camera_version',
-                'plus_extrusion',
-                'player_postback_url'
-            ];
+            _settings = [].concat(_toConsumableArray(_settings), ['camera_version', 'plus_extrusion', 'player_postback_url']);
         }
 
         if (withM666R_MMTest) {
@@ -1333,26 +1256,53 @@ define([
             _settings.push('movement_test');
         }
 
-        const worker = function* () {
-            for (let i = 0; i < _settings.length; i++) {
-                yield SocketMaster.addTask('getDeviceSetting', _settings[i]);
-            }
-        };
+        var worker = /*#__PURE__*/regeneratorRuntime.mark(function worker() {
+            var i;
+            return regeneratorRuntime.wrap(function worker$(_context) {
+                while (1) {
+                    switch (_context.prev = _context.next) {
+                        case 0:
+                            i = 0;
 
-        const go = (result) => {
+                        case 1:
+                            if (!(i < _settings.length)) {
+                                _context.next = 7;
+                                break;
+                            }
+
+                            _context.next = 4;
+                            return SocketMaster.addTask('getDeviceSetting', _settings[i]);
+
+                        case 4:
+                            i++;
+                            _context.next = 1;
+                            break;
+
+                        case 7:
+                        case 'end':
+                            return _context.stop();
+                    }
+                }
+            }, worker, this);
+        });
+
+        var go = function go(result) {
             if (!result.done) {
-                result.value.then((r) => {
-                    let { key, value } = r;
+                result.value.then(function (r) {
+                    var key = r.key,
+                        value = r.value;
+
                     settings[key] = value;
                     go(w.next());
-                }).fail((err) => { console.log(err); });
-            }
-            else {
+                }).fail(function (err) {
+                    console.log(err);
+                });
+            } else {
                 d.resolve(settings);
             }
         };
 
-        let w = worker();
+        var w = worker();
         go(w.next());
 
         return d.promise();
@@ -1361,8 +1311,7 @@ define([
     function setDeviceSetting(name, value) {
         if (value === 'delete') {
             return SocketMaster.addTask('deleteDeviceSetting', name);
-        }
-        else {
+        } else {
             return SocketMaster.addTask('setDeviceSetting', name, value);
         }
     }
@@ -1388,49 +1337,55 @@ define([
     }
 
     function startMonitoringUsb() {
-        let ws = {},
-            requestingReport,
+        var _this2 = this;
+
+        var ws = {},
+            requestingReport = void 0,
             deviceInfo = {};
 
-        const createWebSocket = (availableUsbChannel = -1) => {
-            if (availableUsbChannel === -1) { return; }
-            let url = `control/usb/${availableUsbChannel}`;
+        var createWebSocket = function createWebSocket() {
+            var availableUsbChannel = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : -1;
+
+            if (availableUsbChannel === -1) {
+                return;
+            }
+            var url = 'control/usb/' + availableUsbChannel;
             console.log('createWebSocket', url);
 
             return SimpleWebsocket(url, handleMessage, handleError);
         };
 
-        const handleMessage = (response) => {
+        var handleMessage = function handleMessage(response) {
             if (response.cmd === 'play report') {
                 // specify nickname with usb
                 usbDeviceReport = Object.assign(deviceInfo, response.device_status);
                 console.log('usbDeviceReport', usbDeviceReport);
                 clearTimeout(requestingReport);
-                requestingReport = setTimeout(() => {
+                requestingReport = setTimeout(function () {
                     getUsbDeviceReport();
                 }, 2000);
             }
         };
 
-        const handleError = (error) => {
+        var handleError = function handleError(error) {
             usbDeviceReport = {};
             console.log('handle error', error);
         };
 
-        const getUsbDeviceReport = () => {
+        var getUsbDeviceReport = function getUsbDeviceReport() {
             ws.send('play report');
         };
 
-        let self = this;
+        var self = this;
 
-        UsbChecker((connectedUsbDevices) => {
-            let newList = [],
-                connectedUsbChannels = Object.keys(connectedUsbDevices).filter(c => {
-                    return connectedUsbDevices[c].connected;
-                });
+        UsbChecker(function (connectedUsbDevices) {
+            var newList = [],
+                connectedUsbChannels = Object.keys(connectedUsbDevices).filter(function (c) {
+                return connectedUsbDevices[c].connected;
+            });
 
-                // remove old usb connection
-            _devices.forEach(d => {
+            // remove old usb connection
+            _devices.forEach(function (d) {
                 if (d.source !== 'h2h' || connectedUsbChannels.indexOf(d.addr) !== -1) {
                     newList.push(d);
                 }
@@ -1439,17 +1394,18 @@ define([
             _devices = newList;
 
             // add new usb connection
-            connectedUsbChannels.forEach(c => {
-                this.availableUsbChannel = c;
+            connectedUsbChannels.forEach(function (c) {
+                _this2.availableUsbChannel = c;
                 // if not exist, add
-                if (!_devices.some(d => d.addr === connectedUsbChannels)) {
+                if (!_devices.some(function (d) {
+                    return d.addr === connectedUsbChannels;
+                })) {
                     // if profile not exist, we grab from discover
                     // if usb is plugged before FS starts, it'll appear in discover list
                     if (connectedUsbDevices[c].profile) {
                         _devices.push(connectedUsbDevices[c].profile);
-                    }
-                    else {
-                        _availableDevices.forEach(ad => {
+                    } else {
+                        _availableDevices.forEach(function (ad) {
                             if (ad.source === 'h2h' && ad.addr === c) {
                                 _devices.push(ad);
                             }
@@ -1465,8 +1421,10 @@ define([
             // to be replaced when redux is implemented
             // notify if usb is unplugged
             if (_device && _device.source === 'h2h') {
-                Object.keys(usbEventListeners).forEach(id => {
-                    usbEventListeners[id](connectedUsbChannels.some(c => c == _device.uuid));
+                Object.keys(usbEventListeners).forEach(function (id) {
+                    usbEventListeners[id](connectedUsbChannels.some(function (c) {
+                        return c == _device.uuid;
+                    }));
                 });
             }
         });
@@ -1487,9 +1445,11 @@ define([
     }
 
     function getDeviceBySerial(serial, isUsb, callback) {
-        let matchedDevice = _availableDevices.filter(d => {
-            let a = d.serial === serial;
-            if (isUsb) { a = a && d.source === 'h2h'; };
+        var matchedDevice = _availableDevices.filter(function (d) {
+            var a = d.serial === serial;
+            if (isUsb) {
+                a = a && d.source === 'h2h';
+            };
             return a;
         });
 
@@ -1503,16 +1463,19 @@ define([
                 callback.timeout -= 500;
                 getDeviceBySerial(name, isUsb, callback);
             }, 500);
-        }
-        else {
+        } else {
             callback.onTimeout();
         }
     }
 
-    function getDeviceBySerialFromAvailableList(serial, isUsb = false) {
-        let matchedDevice = _availableDevices.filter(device => {
-            let a = device.serial === serial;
-            if (isUsb) { a = a && device.source === 'h2h'; };
+    function getDeviceBySerialFromAvailableList(serial) {
+        var isUsb = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+        var matchedDevice = _availableDevices.filter(function (device) {
+            var a = device.serial === serial;
+            if (isUsb) {
+                a = a && device.source === 'h2h';
+            };
             return a;
         });
 
@@ -1525,20 +1488,23 @@ define([
         }
 
         // if(this.availableUsbChannel !== device.addr) {
-        if (!_devices.some(d => d.addr === device.addr)) {
+        if (!_devices.some(function (d) {
+            return d.addr === device.addr;
+        })) {
             // get wifi version instead of h2h
-            let dev = _availableDevices.filter(_dev => _dev.serial === device.serial);
+            var dev = _availableDevices.filter(function (_dev) {
+                return _dev.serial === device.serial;
+            });
             if (dev[0]) {
                 return dev[0];
             }
-        }
-        else {
+        } else {
             return device;
         }
     }
 
     function existDevice(serial) {
-        let found = _availableDevices.filter(device => {
+        var found = _availableDevices.filter(function (device) {
             return device.serial === serial;
         });
 
@@ -1556,7 +1522,7 @@ define([
     }
 
     DeviceSingleton.prototype = {
-        init: function () {
+        init: function init() {
             this.calibrate = calibrate;
             this.changeFilament = changeFilament;
             this.changeFilamentDuringPause = changeFilamentDuringPause;
@@ -1632,17 +1598,14 @@ define([
             this.usbDefaultDeviceCheck = usbDefaultDeviceCheck;
             this.zprobe = zprobe;
 
-            Discover(
-                'device-master',
-                function (devices) {
-                    devices = DeviceList(devices);
-                    devices.forEach(d => {
-                        _deviceNameMap[d.name] = d;
-                    });
-                    _availableDevices = devices;
-                    _scanDeviceError(devices);
-                }
-            );
+            Discover('device-master', function (devices) {
+                devices = DeviceList(devices);
+                devices.forEach(function (d) {
+                    _deviceNameMap[d.name] = d;
+                });
+                _availableDevices = devices;
+                _scanDeviceError(devices);
+            });
         }
     };
 

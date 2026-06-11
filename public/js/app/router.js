@@ -1,16 +1,8 @@
-define([
-    'react',
-    'reactDOM',
-    'helpers/i18n',
-    'jquery',
-    'backbone',
-    'helpers/api/config',
-    'app/app-settings',
-    'helpers/detect-webgl',
-],
-function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
+'use strict';
 
-    const _display = function(view, args, el) {
+define(['react', 'reactDOM', 'helpers/i18n', 'jquery', 'backbone', 'helpers/api/config', 'app/app-settings', 'helpers/detect-webgl'], function (React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
+
+    var _display = function _display(view, args, el) {
         el = el || $('section.content')[0];
         args = args || {};
         args.props = args.props || {};
@@ -18,45 +10,36 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
 
         args.state.lang = i18n.get();
         // Shpuldn;t pass props and state using args.
-        const component = React.createElement(view(args), args.props);
+        var component = React.createElement(view(args), args.props);
         ReactDOM.render(component, el);
     };
 
     return Backbone.Router.extend({
         routes: {},
 
-        initialize: function() {
+        initialize: function initialize() {
             var router = this,
                 routes = [
-                    // catch no match route, 404
-                    [/^.*$/, 'e404', this.e404],
-                    // initialize Flux Printer
-                    [
-                        /^initialize\/wifi\/?(select-machine-type|select-beambox-type|connect-beambox|connect-machine|select|not-found|notice-from-device|set-printer|set-password|setup-complete)\/?(.*)?/,
-                        'initial',
-                        this.initial
-                    ],
-                    // go to studio
-                    [
-                        /^studio\/?(print|beambox|laser|scan|usb|settings|draw|cut|mill|cloud)\/?(.*)?/,
-                        'studio',
-                        this.studio
-                    ],
-                    // flux home
-                    [/^$/, 'home', this.home]
-                ];
+            // catch no match route, 404
+            [/^.*$/, 'e404', this.e404],
+            // initialize Flux Printer
+            [/^initialize\/wifi\/?(select-machine-type|select-beambox-type|connect-beambox|connect-machine|select|not-found|notice-from-device|set-printer|set-password|setup-complete)\/?(.*)?/, 'initial', this.initial],
+            // go to studio
+            [/^studio\/?(print|beambox|laser|scan|usb|settings|draw|cut|mill|cloud)\/?(.*)?/, 'studio', this.studio],
+            // flux home
+            [/^$/, 'home', this.home]];
 
-            routes.forEach(function(route) {
+            routes.forEach(function (route) {
                 router.route.apply(router, route);
             });
 
             this.appendNotificationCollection();
         },
 
-        home: function(name) {
+        home: function home(name) {
             this.appendSideBar(false);
 
-            requirejs(['jsx!pages/Home', 'app/app-settings'], function(view, settings) {
+            requirejs(['jsx!pages/Home', 'app/app-settings'], function (view, settings) {
                 var args = {
                     props: {
                         supported_langs: settings.i18n.supported_langs
@@ -67,19 +50,19 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
             });
         },
 
-        initial: function(step, other) {
+        initial: function initial(step, other) {
             var map = {
-                    'select-machine-type': 'Select-Machine-Type',
-                    'select-beambox-type': 'Select-Beambox-Type',
-                    'connect-beambox': 'Connect-Beambox',
-                    'connect-machine': 'Connect-Machine',
-                    'not-found': 'Printer-Not-Found',
-                    'notice-from-device': 'Notice-From-Device',
-                    'select': 'Wifi-Select',
-                    'set-printer': 'Wifi-Set-Printer',
-                    'set-password': 'Wifi-Set-Password',
-                    'setup-complete': 'Wifi-Setup-Complete'
-                },
+                'select-machine-type': 'Select-Machine-Type',
+                'select-beambox-type': 'Select-Beambox-Type',
+                'connect-beambox': 'Connect-Beambox',
+                'connect-machine': 'Connect-Machine',
+                'not-found': 'Printer-Not-Found',
+                'notice-from-device': 'Notice-From-Device',
+                'select': 'Wifi-Select',
+                'set-printer': 'Wifi-Set-Printer',
+                'set-password': 'Wifi-Set-Password',
+                'setup-complete': 'Wifi-Setup-Complete'
+            },
                 view_name = 'Wifi-Home';
 
             if (true === map.hasOwnProperty(step)) {
@@ -88,27 +71,24 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
 
             this.appendSideBar(false);
 
-            requirejs(['jsx!pages/' + view_name], function(view) {
-                _display(
-                    view,
-                    {
-                        props: {
-                            other: other
-                        }
+            requirejs(['jsx!pages/' + view_name], function (view) {
+                _display(view, {
+                    props: {
+                        other: other
                     }
-                );
+                });
             });
         },
 
-        appendNotificationCollection: function() {
-            requirejs(['jsx!views/Notification-Collection'], function(view) {
+        appendNotificationCollection: function appendNotificationCollection() {
+            requirejs(['jsx!views/Notification-Collection'], function (view) {
                 _display(view, {}, $('.notification')[0]);
             });
         },
 
-        appendSideBar: function(show) {
-            show = ('boolean' === typeof show ? show : true);
-            requirejs(['jsx!views/Top-Menu'], function(view) {
+        appendSideBar: function appendSideBar(show) {
+            show = 'boolean' === typeof show ? show : true;
+            requirejs(['jsx!views/Top-Menu'], function (view) {
                 _display(view, {
                     props: {
                         show: show
@@ -117,26 +97,27 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
             });
         },
 
-        studio: function(page, args) {
+        studio: function studio(page, args) {
             args = args || '';
 
             var requests = args.split('/'),
                 child_view = requests.splice(0, 1)[0],
-                // if something needs webgl then add to the list below
-                needWebGL = appSettings.needWebGL,
+
+            // if something needs webgl then add to the list below
+            needWebGL = appSettings.needWebGL,
                 map = {
-                    'print': this.print,
-                    'beambox': this.beambox,
-                    'settings': this.settings,
-                    'laser': this.holder.bind(null, page),
-                    'draw': this.holder.bind(null, page),
-                    'cut': this.holder.bind(null, page),
-                    'mill': this.holder.bind(null, page),
-                    'scan': this.scan,
-                    'usb': this.usb,
-                    'device': this.device,
-                    'cloud': this.cloud
-                },
+                'print': this.print,
+                'beambox': this.beambox,
+                'settings': this.settings,
+                'laser': this.holder.bind(null, page),
+                'draw': this.holder.bind(null, page),
+                'cut': this.holder.bind(null, page),
+                'mill': this.holder.bind(null, page),
+                'scan': this.scan,
+                'usb': this.usb,
+                'device': this.device,
+                'cloud': this.cloud
+            },
                 func = this.print;
 
             if (true === map.hasOwnProperty(page)) {
@@ -147,14 +128,13 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
 
             if (false === detectWebgl() && -1 < needWebGL.indexOf(page)) {
                 location.hash = '#studio/laser';
-            }
-            else {
+            } else {
                 func(child_view, requests);
             }
         },
 
-        scan: function(step) {
-            requirejs(['jsx!pages/Scan'], function(view) {
+        scan: function scan(step) {
+            requirejs(['jsx!pages/Scan'], function (view) {
                 var args = {
                     step: step
                 };
@@ -162,41 +142,41 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
             });
         },
 
-        print: function() {
-            requirejs(['jsx!pages/Print'], function(view) {
+        print: function print() {
+            requirejs(['jsx!pages/Print'], function (view) {
                 _display(view);
             });
         },
 
-        beambox: function() {
-            requirejs(['jsx!pages/Beambox'], function(view) {
+        beambox: function beambox() {
+            requirejs(['jsx!pages/Beambox'], function (view) {
                 _display(view);
             });
         },
 
-        usb: function() {
-            requirejs(['jsx!pages/usb'], function(view) {
+        usb: function usb() {
+            requirejs(['jsx!pages/usb'], function (view) {
                 _display(view);
             });
         },
 
-        settings: function(child, requests) {
-            requirejs(['jsx!pages/Settings', 'app/app-settings'], function(view, settings) {
+        settings: function settings(child, requests) {
+            requirejs(['jsx!pages/Settings', 'app/app-settings'], function (view, settings) {
                 child = (child || 'general').toLowerCase();
 
                 var childView,
                     args = {
-                        child: child,
-                        requests: requests
-                    };
+                    child: child,
+                    requests: requests
+                };
 
                 _display(view, args);
             });
         },
 
-        holder: function(page, step) {
-            let pageCamel = page.charAt(0).toUpperCase() + page.substring(1).toLowerCase();
-            requirejs(['jsx!pages/' + pageCamel ], function(view) {
+        holder: function holder(page, step) {
+            var pageCamel = page.charAt(0).toUpperCase() + page.substring(1).toLowerCase();
+            requirejs(['jsx!pages/' + pageCamel], function (view) {
                 var args = {
                     step: step,
                     props: {
@@ -207,8 +187,8 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
             });
         },
 
-        cloud: function(child, requests) {
-            requirejs(['jsx!pages/Cloud', 'app/app-settings'], function(view) {
+        cloud: function cloud(child, requests) {
+            requirejs(['jsx!pages/Cloud', 'app/app-settings'], function (view) {
                 child = (child || 'general').toLowerCase();
 
                 var args = {
@@ -220,10 +200,9 @@ function(React, ReactDOM, i18n, $, Backbone, config, appSettings, detectWebgl) {
             });
         },
 
-        e404: function() {
+        e404: function e404() {
             // TODO: handle 404
             alert('404');
         }
     });
-
 });

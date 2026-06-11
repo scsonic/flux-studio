@@ -1,16 +1,13 @@
-define([
-    'helpers/local-storage',
-    'app/app-settings',
-    'app/lang/en',
-    'app/lang/zh-tw'
-], function(localStorage, AppSettings, LangEn, LangZHTW) {
+'use strict';
+
+define(['helpers/local-storage', 'app/app-settings', 'app/lang/en', 'app/lang/zh-tw'], function (localStorage, AppSettings, LangEn, LangZHTW) {
     'use strict';
 
     var ACTIVE_LANG = 'active-lang',
         langCache = {
-            'en': LangEn,
-            'zh-tw': LangZHTW
-        },
+        'en': LangEn,
+        'zh-tw': LangZHTW
+    },
         activeLang = localStorage.get(ACTIVE_LANG) || AppSettings.i18n.default_lang,
         currentLang;
 
@@ -22,7 +19,7 @@ define([
          *
          * @return string
          */
-        getActiveLang : function() {
+        getActiveLang: function getActiveLang() {
             return localStorage.get(ACTIVE_LANG) || AppSettings.i18n.default_lang;
         },
 
@@ -33,7 +30,7 @@ define([
          *
          * @return this
          */
-        setActiveLang : function(lang) {
+        setActiveLang: function setActiveLang(lang) {
             currentLang = undefined;
             activeLang = lang;
             localStorage.set(ACTIVE_LANG, lang);
@@ -49,12 +46,13 @@ define([
          *
          * @return mixed
          */
-        get : function(key, args) {
+        get: function get(key, args) {
             key = key || '';
 
             var keys = key.split('.'),
                 currentLangCode = this.getActiveLang(),
-                temp, line;
+                temp,
+                line;
 
             // caching
             if ('undefined' === typeof currentLang) {
@@ -63,12 +61,11 @@ define([
 
             temp = line = currentLang;
 
-            keys.forEach(function(key, i) {
+            keys.forEach(function (key, i) {
                 if ('' !== key) {
                     if ('undefined' !== typeof temp && true === temp.hasOwnProperty(key)) {
                         temp = line = temp[key];
-                    }
-                    else {
+                    } else {
                         throw new Error('KEY "' + keys.join('.') + '" IS NOT EXISTING');
                     }
                 }

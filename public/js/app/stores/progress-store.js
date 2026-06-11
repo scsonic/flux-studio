@@ -1,64 +1,52 @@
-define([
-    'app/dispatcher/progress-dispatcher',
-    'app/constants/progress-constants',
-    'events',
-    'helpers/object-assign'
-], function(
-    Dispatcher,
-    ProgressConstants,
-    EventEmitter
-) {
+'use strict';
+
+define(['app/dispatcher/progress-dispatcher', 'app/constants/progress-constants', 'events', 'helpers/object-assign'], function (Dispatcher, ProgressConstants, EventEmitter) {
     'use strict';
 
     var Store;
 
     Store = Object.assign(EventEmitter.prototype, {
 
-        onOpened: function(callback) {
+        onOpened: function onOpened(callback) {
             this.on(ProgressConstants.OPEN_EVENT, callback);
             return Store;
         },
 
-        onUpdating: function(callback) {
+        onUpdating: function onUpdating(callback) {
             this.on(ProgressConstants.UPDATE_EVENT, callback);
             return Store;
         },
 
-        onClosed: function(callback) {
+        onClosed: function onClosed(callback) {
             this.on(ProgressConstants.FINISH_EVENT, callback);
             return Store;
         },
 
-        removeOpenedListener: function(callback) {
+        removeOpenedListener: function removeOpenedListener(callback) {
             this.removeListener(ProgressConstants.OPEN_EVENT, callback);
             return Store;
         },
 
-        removeUpdatingListener: function(callback) {
+        removeUpdatingListener: function removeUpdatingListener(callback) {
             this.removeListener(ProgressConstants.UPDATE_EVENT, callback);
             return Store;
         },
 
-        removeClosedListener: function(callback) {
+        removeClosedListener: function removeClosedListener(callback) {
             this.removeListener(ProgressConstants.FINISH_EVENT, callback);
             return Store;
         },
 
-        dispatcherIndex: Dispatcher.register(function(payload) {
+        dispatcherIndex: Dispatcher.register(function (payload) {
             var actionType = payload.actionType,
-                actions = [
-                    ProgressConstants.UPDATE_EVENT,
-                    ProgressConstants.FINISH_EVENT,
-                    ProgressConstants.OPEN_EVENT
-                ],
-                isMethodExisting = function(method) {
-                    return actionType === method;
-                };
+                actions = [ProgressConstants.UPDATE_EVENT, ProgressConstants.FINISH_EVENT, ProgressConstants.OPEN_EVENT],
+                isMethodExisting = function isMethodExisting(method) {
+                return actionType === method;
+            };
 
             if (true === actions.some(isMethodExisting)) {
                 Store.emit(actionType, payload);
-            }
-            else {
+            } else {
                 throw new Error('No method exists');
             }
         })

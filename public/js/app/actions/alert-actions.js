@@ -1,39 +1,31 @@
-define([
-    'app/constants/alert-constants',
-    'app/dispatcher/alert-dispatcher',
-    'app/stores/alert-store',
-    'helpers/i18n'
-], function(
-    AlertConstants,
-    AlertDispatcher,
-    AlertStore,
-    i18n
-) {
+'use strict';
+
+define(['app/constants/alert-constants', 'app/dispatcher/alert-dispatcher', 'app/stores/alert-store', 'helpers/i18n'], function (AlertConstants, AlertDispatcher, AlertStore, i18n) {
     'use strict';
 
     var lang = i18n.get();
 
     return {
 
-        showInfo: function(message, callback) {
+        showInfo: function showInfo(message, callback) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_INFO, message, callback
+                actionType: AlertConstants.SHOW_INFO, message: message, callback: callback
             });
         },
 
-        showWarning: function(message, onClickCallback, fixed) {
+        showWarning: function showWarning(message, onClickCallback, fixed) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_WARNING, message, onClickCallback, fixed
+                actionType: AlertConstants.SHOW_WARNING, message: message, onClickCallback: onClickCallback, fixed: fixed
             });
         },
 
-        showError: function(message) {
+        showError: function showError(message) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_ERROR, message
+                actionType: AlertConstants.SHOW_ERROR, message: message
             });
         },
 
-        showDeviceBusyPopup: function(id) {
+        showDeviceBusyPopup: function showDeviceBusyPopup(id) {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_POPUP_DEVICE_BUSY,
                 caption: lang.message.device_busy.caption,
@@ -42,39 +34,39 @@ define([
             }, id);
         },
 
-        showPopupInfo: function(id, message, caption) {
+        showPopupInfo: function showPopupInfo(id, message, caption) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_POPUP_INFO, caption, message, id
+                actionType: AlertConstants.SHOW_POPUP_INFO, caption: caption, message: message, id: id
             }, id);
         },
 
-        showPopupWarning: function(id, message, caption) {
+        showPopupWarning: function showPopupWarning(id, message, caption) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_POPUP_WARNING, caption, message, id
+                actionType: AlertConstants.SHOW_POPUP_WARNING, caption: caption, message: message, id: id
             });
         },
 
-        showPopupError: function(id, message, caption) {
+        showPopupError: function showPopupError(id, message, caption) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_POPUP_ERROR, caption, message, id
+                actionType: AlertConstants.SHOW_POPUP_ERROR, caption: caption, message: message, id: id
             });
         },
 
-        showPopupRetry: function(id, message, caption) {
+        showPopupRetry: function showPopupRetry(id, message, caption) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_POPUP_RETRY, caption, message, id
+                actionType: AlertConstants.SHOW_POPUP_RETRY, caption: caption, message: message, id: id
             });
         },
 
-        showPopupRetryAbort: function(id, message, caption) {
+        showPopupRetryAbort: function showPopupRetryAbort(id, message, caption) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_POPUP_RETRY_ABORT, caption, message, id
+                actionType: AlertConstants.SHOW_POPUP_RETRY_ABORT, caption: caption, message: message, id: id
             });
         },
 
-        showPopupYesNo: function(id, message, caption, args, callback) {
+        showPopupYesNo: function showPopupYesNo(id, message, caption, args, callback) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_POPUP_YES_NO, caption, message, id, args
+                actionType: AlertConstants.SHOW_POPUP_YES_NO, caption: caption, message: message, id: id, args: args
             });
             // Make one time listener
             if (callback) {
@@ -83,7 +75,7 @@ define([
             }
         },
 
-        showPopupCustom: function(id, message, customText, caption, args, callback) {
+        showPopupCustom: function showPopupCustom(id, message, customText, caption, args, callback) {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_POPUP_CUSTOM,
                 id: id,
@@ -97,8 +89,8 @@ define([
             }
         },
 
-        showPopupCustomGroup: function(id, message, customText, caption, args, callback) {
-            callback = callback ? callback : ()=>{};
+        showPopupCustomGroup: function showPopupCustomGroup(id, message, customText, caption, args, callback) {
+            callback = callback ? callback : function () {};
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_POPUP_CUSTOM_GROUP,
                 id: id,
@@ -110,7 +102,7 @@ define([
             });
         },
 
-        showPopupCustomCancel: function(id, message, customText, caption, callback) {
+        showPopupCustomCancel: function showPopupCustomCancel(id, message, customText, caption, callback) {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_POPUP_CUSTOM_CANCEL,
                 id: id,
@@ -124,13 +116,13 @@ define([
             }
         },
 
-        showPopupQuestion: function(id, message, caption) {
+        showPopupQuestion: function showPopupQuestion(id, message, caption) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.SHOW_POPUP_QUESTION, caption, message, id
+                actionType: AlertConstants.SHOW_POPUP_QUESTION, caption: caption, message: message, id: id
             });
         },
 
-        showUpdate: function(device, type, updateInfo, onDownload, onInstall) {
+        showUpdate: function showUpdate(device, type, updateInfo, onDownload, onInstall) {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_POPUP_UPDATE,
                 device: device,
@@ -141,7 +133,7 @@ define([
             });
         },
 
-        showChangeFilament: function(device, src) {
+        showChangeFilament: function showChangeFilament(device, src) {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_POPUP_CHANGE_FILAMENT,
                 device: device,
@@ -149,70 +141,69 @@ define([
             });
         },
 
-        showHeadTemperature: function(device) {
+        showHeadTemperature: function showHeadTemperature(device) {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_HEAD_TEMPERATURE,
                 device: device
             });
         },
 
-        showCameraCalibration: function(device) {
+        showCameraCalibration: function showCameraCalibration(device) {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.SHOW_POPUP_CAMERA_CALIBRATION,
                 device: device
             });
         },
 
-        notifyRetry: function(id) {
+        notifyRetry: function notifyRetry(id) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.NOTIFY_RETRY, id
+                actionType: AlertConstants.NOTIFY_RETRY, id: id
             });
         },
 
-        notifyAbort: function(id) {
+        notifyAbort: function notifyAbort(id) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.NOTIFY_ABORT, id
+                actionType: AlertConstants.NOTIFY_ABORT, id: id
             });
         },
 
-        notifyYes: function(id, args) {
+        notifyYes: function notifyYes(id, args) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.NOTIFY_YES, id, args
+                actionType: AlertConstants.NOTIFY_YES, id: id, args: args
             });
         },
 
-        notifyCancel: function(id) {
+        notifyCancel: function notifyCancel(id) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.NOTIFY_CANCEL, id
+                actionType: AlertConstants.NOTIFY_CANCEL, id: id
             });
         },
 
-        notifyCustom: function(id) {
+        notifyCustom: function notifyCustom(id) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.NOTIFY_CUSTOM, id
+                actionType: AlertConstants.NOTIFY_CUSTOM, id: id
             });
         },
 
-        notifyCustomGroup: function(id) {
+        notifyCustomGroup: function notifyCustomGroup(id) {
             AlertDispatcher.dispatch({
-                actionType: AlertConstants.NOTIFY_CUSTOM_GROUP, id
-            });
-
-        },
-
-        notifyAnswer: function(id, isYes) {
-            AlertDispatcher.dispatch({
-                actionType: AlertConstants.NOTIFY_ANSWER, id, isYes
+                actionType: AlertConstants.NOTIFY_CUSTOM_GROUP, id: id
             });
         },
 
-        closeNotification: function() {
+        notifyAnswer: function notifyAnswer(id, isYes) {
+            AlertDispatcher.dispatch({
+                actionType: AlertConstants.NOTIFY_ANSWER, id: id, isYes: isYes
+            });
+        },
+
+        closeNotification: function closeNotification() {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.CLOSE_NOTIFICATION
             });
         },
 
-        closePopup: function() {
+        closePopup: function closePopup() {
             AlertDispatcher.dispatch({
                 actionType: AlertConstants.CLOSE_POPUP
             });

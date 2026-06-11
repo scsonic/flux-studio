@@ -1,8 +1,6 @@
-define([
-    'jquery',
-    'helpers/three/threex.domevents',
-    'threeOrbitControls'
-], function ($) {
+'use strict';
+
+define(['jquery', 'helpers/three/threex.domevents', 'threeOrbitControls'], function ($) {
     'use strict';
 
     var THREE = window.THREE || {},
@@ -13,8 +11,7 @@ define([
         controllerHeight = 150;
 
     var camera, scene, renderer;
-    var orbitControl,
-        defaultDistance, offsetRatio;
+    var orbitControl, defaultDistance, offsetRatio;
 
     function init(src) {
         reactSrc = src;
@@ -25,10 +22,10 @@ define([
             d = 200;
 
         camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-        camera.position.set( 0, -300, 110 );
+        camera.position.set(0, -300, 110);
         camera.up = new THREE.Vector3(0, 0, 1);
-		camera.rotation.y = - Math.PI / 4;
-		camera.rotation.x = Math.atan( - 1 / Math.sqrt( 2 ) );
+        camera.rotation.y = -Math.PI / 4;
+        camera.rotation.x = Math.atan(-1 / Math.sqrt(2));
 
         defaultDistance = camera.position.length();
         offsetRatio = Math.sqrt(Math.pow(camera.position.x, 2) + Math.pow(camera.position.y, 2) + Math.pow(camera.position.z, 2)) / defaultDistance;
@@ -39,13 +36,12 @@ define([
             domEvents,
             cube;
 
-        let p01 = getMaterialFromImage('img/pc-front.png'),
+        var p01 = getMaterialFromImage('img/pc-front.png'),
             p02 = getMaterialFromImage('img/pc-back.png'),
             p03 = getMaterialFromImage('img/pc-left.png'),
             p04 = getMaterialFromImage('img/pc-right.png'),
             p05 = getMaterialFromImage('img/pc-bottom.png'),
             p06 = getMaterialFromImage('img/pc-top.png'),
-
             p07 = getMaterialFromImage('img/pc-right-hover.png'),
             p08 = getMaterialFromImage('img/pc-left-hover.png'),
             p09 = getMaterialFromImage('img/pc-back-hover.png'),
@@ -53,16 +49,14 @@ define([
             p11 = getMaterialFromImage('img/pc-top-hover.png'),
             p12 = getMaterialFromImage('img/pc-bottom-hover.png');
 
-        $.when(p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11, p12)
-        .done((front, back, left, right, bottom, top, frontOn, backOn, leftOn, rightOn, bottomOn, topOn) => {
+        $.when(p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11, p12).done(function (front, back, left, right, bottom, top, frontOn, backOn, leftOn, rightOn, bottomOn, topOn) {
             buildCube({
-                front, back, left, right, bottom, top,
-                frontOn, backOn, leftOn, rightOn, bottomOn, topOn
+                front: front, back: back, left: left, right: right, bottom: bottom, top: top,
+                frontOn: frontOn, backOn: backOn, leftOn: leftOn, rightOn: rightOn, bottomOn: bottomOn, topOn: topOn
             });
         });
 
-
-        const buildCube = (m) => {
+        var buildCube = function buildCube(m) {
             material.front = m.front;
             material.back = m.back;
             material.left = m.left;
@@ -105,18 +99,18 @@ define([
             orbitControl.enablePan = false;
             orbitControl.addEventListener('change', updateMainOrbitControl);
 
-            var resetMeshMaterial = function() {
+            var resetMeshMaterial = function resetMeshMaterial() {
                 cube.material.materials = [material.right, material.left, material.back, material.front, material.top, material.bottom];
             };
 
-            domEvents.addEventListener(cube, 'mousemove', function(event) {
+            domEvents.addEventListener(cube, 'mousemove', function (event) {
                 var faceIndex = event.intersect.face.materialIndex;
                 resetMeshMaterial();
                 cube.material.materials[faceIndex] = material.hover[faceIndex];
                 render();
             });
 
-            domEvents.addEventListener(cube, 'mouseout', function() {
+            domEvents.addEventListener(cube, 'mouseout', function () {
                 resetMeshMaterial();
                 render();
             });
@@ -169,24 +163,20 @@ define([
 
     function updateMainOrbitControl(e) {
         var c = camera.clone();
-        c.position.set(
-            c.position.x * offsetRatio,
-            c.position.y * offsetRatio,
-            c.position.z * offsetRatio
-        );
+        c.position.set(c.position.x * offsetRatio, c.position.y * offsetRatio, c.position.z * offsetRatio);
         reactSrc._updateCamera(c);
     }
 
     function render() {
-        if(renderer) {
+        if (renderer) {
             renderer.render(scene, camera);
         }
     }
 
     function getMaterialFromImage(url) {
-        let d = $.Deferred();
-        let loader = new THREE.TextureLoader();
-        loader.load(url, (texture) => {
+        var d = $.Deferred();
+        var loader = new THREE.TextureLoader();
+        loader.load(url, function (texture) {
             d.resolve(new THREE.MeshBasicMaterial({ map: texture }));
         });
         return d.promise();

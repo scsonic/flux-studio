@@ -1,0 +1,142 @@
+'use strict';
+
+define(['jquery', 'react', 'reactClassset'], function ($, React, ReactCx) {
+    'use strict';
+
+    var deferred = $.Deferred();
+
+    return React.createClass({
+        getDefaultProps: function getDefaultProps() {
+            return {
+                lang: {},
+                sizeMaxLimit: 400000,
+                accept: '',
+                multiple: true,
+                className: {},
+                typeErrorMessage: '',
+                // events
+                onReadFileStarted: function onReadFileStarted() {},
+                onReadingFile: function onReadingFile() {},
+                onReadEnd: function onReadEnd() {},
+                onError: function onError() {}
+            };
+        },
+
+        // public events
+        getFileExtension: function getFileExtension(fileName) {
+            return fileName.split('.').pop();
+        },
+
+        readFiles: function readFiles(e, files) {
+            var self = this,
+                currentTarget = e.currentTarget,
+                fileIndex = 0,
+                thisFile = files.item(0),
+                blobUrl = window.URL,
+                fileReader,
+                uploadFiles = [],
+                blob,
+                readFile = function readFile() {
+                fileReader = new FileReader();
+
+                fileReader.onloadend = function (e) {
+                    window.processDroppedFile = false;
+                    blob = new Blob([fileReader.result], { type: thisFile.type });
+                    uploadFiles.push({
+                        data: fileReader.result,
+                        blob: blob,
+                        url: blobUrl.createObjectURL(blob),
+                        name: thisFile.name,
+                        extension: self.getFileExtension(thisFile.name),
+                        type: thisFile.type,
+                        size: thisFile.size,
+                        index: fileIndex,
+                        totalFiles: files.length
+                    });
+
+                    fileIndex++;
+                    thisFile = files.item(fileIndex);
+
+                    deferred.notify({
+                        status: 'reading',
+                        file: uploadFiles.slice(-1)[0],
+                        isEnd: fileIndex === files.length
+                    });
+
+                    // finished
+                    if (fileIndex === files.length) {
+                        deferred.resolve();
+                        deferred = $.Deferred();
+                        currentTarget.value = '';
+                    }
+                };
+
+                fileReader.onerror = function () {
+                    window.processDroppedFile = false;
+                    self.props.onError();
+                    currentTarget.value = '';
+                };
+
+                fileReader.readAsArrayBuffer(thisFile);
+            },
+                checkType = function checkType(files) {
+                var accept = self.props.accept.replace(',', '|'),
+                    reg = new RegExp(accept.replace('*', '\\w*')),
+                    result = true;
+
+                for (var i = 0; i < files.length; i++) {
+                    result = reg.test(files.item(i).type);
+
+                    if (false === result) {
+                        break;
+                    }
+                }
+
+                return result;
+            };
+
+            self.props.onReadFileStarted(e);
+            deferred.progress(function (data) {
+                self.props.onReadingFile(data.file, data.isEnd, deferred);
+
+                if (false === data.isEnd) {
+                    readFile();
+                }
+            }).done(self.props.onReadEnd.bind(null, e, uploadFiles));
+
+            if (false === checkType(files)) {
+                self.props.onError(self.props.typeErrorMessage || 'File(s) are not accepted');
+            } else {
+                readFile();
+            }
+        },
+
+        // UI events
+        _onReadFile: function _onReadFile(e) {
+            if (window.processDroppedFile === true) {
+                return;
+            }
+            this.readFiles(e, e.currentTarget.files);
+        },
+
+        render: function render() {
+            var self = this,
+                props = self.props,
+                className = ReactCx.cx(props.className);
+
+            return React.createElement('input', {
+                'data-ga-event': 'upload-file',
+                'data-file-input': 'file-upload-widget',
+                id: 'file-uploader',
+                ref: 'uploader',
+                type: 'file',
+                className: className,
+                accept: props.accept,
+                multiple: props.multiple,
+                defaultValue: '',
+                onChange: self._onReadFile
+            });
+        }
+
+    });
+});
