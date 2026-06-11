@@ -1,4 +1,8 @@
 # FLUX Studio
+
+> [!NOTE]
+> **This is a specialized version modified and built specifically for macOS Apple Silicon (arm64 / M1/M2/M3 MacBooks) architectures.**
+
 ---
 
 ## Introduction
